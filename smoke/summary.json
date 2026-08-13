@@ -1,0 +1,191 @@
+{
+  "episodes": 5,
+  "runs": 20,
+  "pairing_checks": 15,
+  "by_column": {
+    "b0": {
+      "mean_raw": 0.5333,
+      "success_rate": 0.0,
+      "minefield_hits": 3
+    },
+    "b1": {
+      "mean_raw": 0.3556,
+      "success_rate": 0.0,
+      "minefield_hits": 3
+    }
+  },
+  "table": [
+    {
+      "episode": "smoke_morning_1",
+      "column": "b0",
+      "switch": null,
+      "raw": 0.833333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_1",
+      "column": "b1",
+      "switch": "S1",
+      "raw": 0.5,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_1",
+      "column": "b1",
+      "switch": "S2",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_1",
+      "column": "b1",
+      "switch": "S3",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_2",
+      "column": "b0",
+      "switch": null,
+      "raw": 0.833333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_2",
+      "column": "b1",
+      "switch": "S1",
+      "raw": 0.5,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_2",
+      "column": "b1",
+      "switch": "S2",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_morning_2",
+      "column": "b1",
+      "switch": "S3",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_event_1",
+      "column": "b0",
+      "switch": null,
+      "raw": 0.333333,
+      "success": false,
+      "minefields": [
+        "F_double_booking"
+      ]
+    },
+    {
+      "episode": "smoke_event_1",
+      "column": "b1",
+      "switch": "S1",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": [
+        "F_double_booking"
+      ]
+    },
+    {
+      "episode": "smoke_event_1",
+      "column": "b1",
+      "switch": "S2",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_event_1",
+      "column": "b1",
+      "switch": "S3",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_event_2",
+      "column": "b0",
+      "switch": null,
+      "raw": 0.333333,
+      "success": false,
+      "minefields": [
+        "F_double_booking"
+      ]
+    },
+    {
+      "episode": "smoke_event_2",
+      "column": "b1",
+      "switch": "S1",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": [
+        "F_double_booking"
+      ]
+    },
+    {
+      "episode": "smoke_event_2",
+      "column": "b1",
+      "switch": "S2",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_event_2",
+      "column": "b1",
+      "switch": "S3",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_event_3",
+      "column": "b0",
+      "switch": null,
+      "raw": 0.333333,
+      "success": false,
+      "minefields": [
+        "F_double_booking"
+      ]
+    },
+    {
+      "episode": "smoke_event_3",
+      "column": "b1",
+      "switch": "S1",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": [
+        "F_double_booking"
+      ]
+    },
+    {
+      "episode": "smoke_event_3",
+      "column": "b1",
+      "switch": "S2",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    },
+    {
+      "episode": "smoke_event_3",
+      "column": "b1",
+      "switch": "S3",
+      "raw": 0.333333,
+      "success": false,
+      "minefields": []
+    }
+  ]
+}

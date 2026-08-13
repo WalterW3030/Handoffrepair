@@ -1,0 +1,53 @@
+# Corrected specification (advisor instructions 3, 2026-08-08) — FROZEN before any episode runs.
+# This file is the single source of truth for the pilot's formal definitions.
+
+canonical_arguments:
+  encoding: schema-typed normalized JSON
+  normalization:
+    - keys sorted recursively
+    - numbers serialized without trailing zeros
+    - strings NFC-normalized, whitespace-trimmed
+  arg_ref:
+    # payloads larger than 1KB are content-addressed; the ledger stores the hash, not the payload
+    threshold_bytes: 1024
+    hash: sha256
+
+idempotency_key:
+  # detects duplicated actions across a handoff
+  formula: "H(tool, canonical_args, episode_id)"
+  hash: sha256
+
+objective:
+  formula: "J(g) = L_task(g) + lambda1 * L_contract(g) + lambda2 * cost_norm(H)"
+  lambda1: 5.0
+  lambda2: 1.0
+  L_contract:
+    formula: "w_schema*schema_violations + w_constraint*constraint_loss + w_commit*commitment_loss + w_dup*duplicate_side_effects"
+    w_schema: 0.4
+    w_constraint: 0.3
+    w_commit: 0.2
+    w_dup: 0.1
+  cost_norm:
+    formula: "(tokens(H) + added_calls * 500) / 10000"   # normalized to ~[0,1]
+
+gepa_cost_reconciliation:
+  # the <10% claim is a MEASURED RATIO, computed not asserted
+  claim: "compiler calibration cost < 10% of B6 yardstick cost on the same condition"
+  yardstick: "B6 GEPA, one representative condition, ~150 rollouts"
+  accounting: identical on both sides (calls, tokens, GPU-h, cash)
+  fallback: "if measured ratio > 10%, claim is revised to the measured value before any submission"
+
+gate:
+  # thresholds pre-registered here BEFORE Day 0; gate code (Day 2) must read them from this file
+  tau_restart: 0.5          # restart if V1-V3 failure cost estimate exceeds this fraction of episode value
+  counterfactual_subsample: 0.10   # 10% of episodes log counterfactual branch outcomes
+  checks: [V1_reference_resolution, V2_dependency_closure, V3_duplicate_side_effects, V4_constraint_carry, V5_manifest_compatibility]
+
+audit:
+  extraction_sample: 0.10          # 10% stratified sample, human-scored
+  precision_bar: 0.95              # predeclared field-level precision bar
+  note: "the ONLY manual touch in the entire pilot"
+
+freeze:
+  tag: pilot-freeze-v1
+  append_only_log: logs/run_log.jsonl

@@ -1,0 +1,16 @@
+# Model pins. sha256 fields are filled at weight staging (prerequisite P4, Day 0) BEFORE freeze.
+# Exact precision is part of the version pin (advisor: "exact model versions").
+calibrated_pair_1:
+  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, sha256: TBD_AT_STAGING}
+  target: {hf_id: Qwen/Qwen3-8B, precision: fp16, sha256: TBD_AT_STAGING}
+calibrated_pair_2:
+  source: {hf_id: meta-llama/Llama-3.3-70B-Instruct, precision: fp8, sha256: TBD_AT_STAGING, gated: true}
+  target: {hf_id: Qwen/Qwen3-32B, precision: fp8, sha256: TBD_AT_STAGING}
+held_out_pair:
+  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, sha256: TBD_AT_STAGING}
+  target: {hf_id: google/gemma-3-27b-it, precision: fp16, sha256: TBD_AT_STAGING, gated: true,
+           tool_calling: prompt_based_json_via_vllm_structured_outputs}   # prerequisite P2
+serving:
+  engine: vllm
+  vllm_version: TBD_AT_STAGING    # pinned at Day 0; must support Qwen3 tool parser
+  prefix_caching: required

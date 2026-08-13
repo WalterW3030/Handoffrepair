@@ -1,0 +1,10 @@
+# Pilot episode set. Two layers:
+#  (1) smoke: 5 synthetic CPU episodes (A5/A9) — harness validation only, no scientific claims
+#  (2) pilot: ToolSandbox self-contained scenarios, selected by src/toolsandbox/select_scenarios.py
+#      at Day 0 (P3 restriction: no external-web-service tools; simulator seeds fixed)
+smoke_episodes: [smoke_morning_1, smoke_morning_2, smoke_event_1, smoke_event_2, smoke_event_3]
+pilot_episode_set: TBD_AT_DAY0_SELECTION
+switch_points: [S1, S2, S3]     # S2 (after state-changing call) is the decisive point
+episodes_per_cell: "30-50 paired episodes (2 calibrated pairs main runs); held-out pair zero-shot"
+calibration_budget:
+  episodes_per_pair: 20          # exactly 20, then compiler frozen

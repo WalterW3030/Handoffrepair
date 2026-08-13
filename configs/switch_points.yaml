@@ -1,0 +1,6 @@
+# Semantic switch-point definitions (pilot uses S1-S3; S0/S4 documented for the full build).
+S0: "before any assistant action (cold handoff)"
+S1: "after the first tool call of any kind (context formed, no commitment yet)"
+S2: "immediately after the first STATE-CHANGING tool call (decisive: side effects now exist)"
+S3: "after >= half of the episode's scripted actions have executed (mid-trajectory)"
+S4: "immediately before the final answer (maximum sunk context)"
