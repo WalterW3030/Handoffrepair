@@ -15,8 +15,14 @@ calibrated_pair_2:
   target: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
 held_out_pair:
   source: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
-  target: {hf_id: google/gemma-3-27b-it, precision: fp16, quantization: none, sha256: TBD_AT_STAGING, gated: true,
-           tool_calling: prompt_based_json_via_vllm_structured_outputs}   # prerequisite P2
+  # SWITCHED Gemma-3-27B -> Gemma-4-31B (user decision 2026-08-11): Apache 2.0 (no gating),
+  # modern, still a different family than Qwen/Llama so held-out "interface distance" is preserved.
+  target: {hf_id: google/gemma-4-31b-it, precision: bf16, quantization: none, sha256: TBD_AT_STAGING,
+           gated: false, license: "Apache-2.0",
+           tool_calling: "NATIVE (<|tool_call>...<tool_call|>) — but see P2 blocker in serving notes"}
+  # PROBLEM (flagged): Gemma-4 tool calling is UNRELIABLE in vLLM as of v0.24.0; the native
+  # <|tool_call> format is not parsed by all servers. Day-0 must verify the pinned vLLM version
+  # parses gemma-4 tool calls (or use sglang with --tool-call-parser gemma4). See serve_gemma4_31b.sh.
 user_simulator:
   hf_id: Qwen/Qwen3-8B
   precision: fp16

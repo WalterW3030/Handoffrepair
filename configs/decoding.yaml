@@ -19,7 +19,8 @@ tool_parsers:
   Qwen/Qwen3-32B: hermes
   Qwen/Qwen3-8B: hermes
   RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic: llama3_json
-  google/gemma-3-27b-it: "none — serving/gemma_tool_shim.py owns the protocol (guided_json)"
+  google/gemma-4-31b-it: gemma4   # NATIVE tool calling; gemma_tool_shim.py retained only as
+                                  # last-resort fallback if the pinned vLLM/sglang parser fails
 serving:
   engine: vllm
   gpu_memory_utilization: 0.92

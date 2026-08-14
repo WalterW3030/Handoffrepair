@@ -1,6 +1,6 @@
-"""A8/P2 — Gemma-3-27B tool-call shim.
+"""A8/P2 — Gemma-4-31B LAST-RESORT tool-call shim (fallback only).
 
-Gemma 3 has no dedicated function-calling tokens. This shim implements tool
+Gemma 4 has NATIVE function calling; the primary path is the gemma4 tool parser (vLLM/sglang). This shim is retained ONLY as a last-resort fallback if the pinned parser fails. It implements tool
 calling as prompt-based JSON, with vLLM structured outputs (guided JSON
 schema) guaranteeing every response is a PARSEABLE call — as the vLLM docs
 put it, parseable, not necessarily high-quality. That quality gap is real
@@ -44,7 +44,7 @@ class GemmaToolShim:
     as MockModel / the vLLM hermes client, so the runner never knows which
     model interface it is talking to (manifest records the difference)."""
 
-    def __init__(self, client, model_name="google/gemma-3-27b-it"):
+    def __init__(self, client, model_name="google/gemma-4-31b-it"):
         self.client = client          # openai-compatible vLLM client
         self.name = model_name
 

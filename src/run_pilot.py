@@ -23,7 +23,7 @@ CFG = lambda n: yaml.safe_load(open(os.path.join(ROOT, "configs", n)))
 PAIRS = {
     "pair1_32to8":    ("Qwen/Qwen3-32B", "Qwen/Qwen3-8B"),
     "pair2_70to32":   ("RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic", "Qwen/Qwen3-32B"),
-    "heldout_32to27": ("Qwen/Qwen3-32B", "google/gemma-3-27b-it"),
+    "heldout_32to27": ("Qwen/Qwen3-32B", "google/gemma-4-31b-it"),
 }
 COLUMNS_ALL  = ["B0", "B1", "B2a", "B3", "compiler"]
 COLUMNS_HELD = ["B0", "B1", "compiler"]          # zero-shot recovery needs only these
