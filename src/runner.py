@@ -11,13 +11,16 @@ plug into the same run() via the `handoff` hook — Day 2/3 work, not Part A.
 Strict pairing guarantee: b1 logs prefix_ids["switch"]; the smoke suite
 re-runs each (episode, switch_point) twice and asserts identical IDs.
 """
-import copy, datetime, os, sys
+import copy, datetime, os, sys, uuid
 
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "scoring"))
 
 import world, prefix_cache, switch_points, logging_
 from scoring import dag as dag_scorer
+
+# uuid5 namespace for stable logical-operation IDs (item 6)
+_OP_NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 
 def _derive(state):
@@ -55,10 +58,15 @@ def run(episode, column, switch_point, source, target, seed, log_path,
             spec = world_impl[act["tool"]]
             step["side_effect"] = spec["side_effect"]
             step["result"] = spec["fn"](state, act.get("args", {}))
+            # stable logical-operation ID: issued at first issue, REUSED across retries
+            # and across the handoff (item 6). op_index = count of tool calls so far.
+            op_index = sum(1 for s in steps if s["type"] == "tool_call")
+            step["logical_op_id"] = str(uuid.uuid5(
+                _OP_NS, f"{episode['episode_id']}:{op_index}"))
             step["idempotency_key"] = prefix_cache.hashlib.sha256(
                 prefix_cache.canonical(
                     {"tool": act["tool"], "canonical_args": act.get("args", {}),
-                     "episode_id": episode["episode_id"]}).encode()).hexdigest()
+                     "logical_op_id": step["logical_op_id"]}).encode()).hexdigest()
             messages.append({"role": "assistant", "content": prefix_cache.canonical(act)})
             messages.append({"role": "tool", "content": prefix_cache.canonical(step["result"])})
         else:
