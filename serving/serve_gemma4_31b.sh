@@ -7,7 +7,9 @@
 # native <|tool_call> format is not parsed by all servers. TWO serving paths; Day-0 picks the
 # one that WORKS on the pinned version, and records which in the run log:
 #
-#   PATH A (vLLM, preferred if the pinned version parses gemma4 tool calls):
+#   PATH A (vLLM, preferred). Pin a vLLM version that INCLUDES the gemma4 tool parser
+#   (the early-v0.24 bugs were fixed shortly after; use the official Gemma-4 recipe).
+#   The official recipe REQUIRES the dedicated chat template + reasoning parser [vLLM recipes].
 set -euo pipefail
 : "${VLLM_GEMMA4_OK:?set VLLM_GEMMA4_OK=1 after Day-0 verifies vLLM parses gemma-4 tool calls}"
 vllm serve google/gemma-4-31b-it \
@@ -15,6 +17,8 @@ vllm serve google/gemma-4-31b-it \
   --gpu-memory-utilization 0.92 \
   --enable-prefix-caching \
   --enable-auto-tool-choice --tool-call-parser gemma4 \
+  --reasoning-parser gemma4 \
+  --chat-template examples/tool_chat_template_gemma4.jinja \
   --port 8000
 
 #   PATH B (sglang fallback, verified working for gemma-4 tool calling in community reports):
