@@ -1,0 +1,53 @@
+# FROZEN evaluation definitions (advisor bundle item 6). Read-only after pilot-freeze-v1.
+
+columns:
+  B0: "target-from-start. Fresh episode; the TARGET model executes every turn from the
+       original system+user messages. No handoff occurs. Upper-bound reference for the target."
+  B1: "raw switch. SOURCE executes until the switch point; prefix snapshot logged; TARGET continues
+       from the identical cached prefix + identical world state, transcript concatenated verbatim.
+       No state or contract repair. The naive-handoff baseline."
+  B2a: "matched-token summary. At the switch point the SOURCE produces a natural-language summary
+        of the trajectory so far; TARGET continues from system+user+summary. The summary token
+        budget is matched to the compiler handoff's token count on the same episode (so B2a and
+        the compiler differ in WHAT is handed over, not HOW MUCH)."
+  B3: "fixed typed state. At the switch point a FIXED, hand-written typed template (same fields as
+       the ledger schema, populated by deterministic rules from the trajectory — no learning, no
+       search) is handed to TARGET. Isolates the value of typed structure from the compiler's
+       selection/optimization."
+
+primary_endpoint:
+  name: task_success                # deterministic DAG scorer; no LLM judge
+  definition: "binary per episode: no minefield hit AND full milestone weight achieved
+               (configs/spec_v3_frozen.yaml scoring; src/scoring/dag.py)"
+  secondary: [raw_score, schema_validity, constraint_coverage, duplicate_side_effect_rate,
+              gate_branch_distribution, cost_per_column]
+
+confidence_intervals:
+  method: hierarchical_bootstrap
+  levels: [episode, scenario_family]     # resample families, then episodes within family
+  resamples: 10000
+  confidence: 0.95
+  pairing: "paired on (episode, switch_point, seed) — all columns of a cell share the cached prefix"
+
+epsilon_rule:
+  epsilon_points: 5
+  definition: "recovery = (compiler_score - B1_score) / (B0_score - B1_score), computed only where
+               the denominator (B0-B1 gap) exceeds epsilon=5 points; cells with gap <= 5 pts are
+               excluded from the recovery ratio (guards against division on noise)"
+
+go_no_go:
+  Q1: {question: "post-tool switch degradation >= 10 pts or statistically clear in >= 2 pair/switch regions?",
+       threshold: "paired 95% CI on (B0-B1) excludes 0 in >= 2 regions, OR mean drop >= 10 pts"}
+  Q2: {question: "B3 fixed typed state > B2a matched-token summary?",
+       threshold: "paired 95% CI on (B3-B2a) excludes 0, favors B3"}
+  Q3: {question: "compiler recovers >= 50% of loss on the HELD-OUT pair?",
+       threshold: "epsilon-guarded recovery >= 0.5 on held-out pair cells with denominator > 5 pts"}
+  Q4: {question: "gate reduces harmful repairs / duplicate side effects without restarting most episodes?",
+       threshold: "harmful-repair rate < B1's AND restart rate < 30%"}
+  decision: "4/4 GO -> full build. Any NO -> pre-mapped pivot (RD-2 section 8), reported as-is."
+
+extraction_audit:
+  sample: 0.10
+  precision_bar: 0.95
+  recall_bar: 0.90
+  critical_fields: [G_edges, C_constraints, E_effects, S_side_effect_ids]

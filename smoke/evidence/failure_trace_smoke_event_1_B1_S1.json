@@ -1,0 +1,72 @@
+{
+  "cash": 0.0,
+  "checks_fired": [
+    "switch_reached:S1"
+  ],
+  "column": "b1",
+  "episode_id": "smoke_event_1",
+  "gate_branch": null,
+  "gpu_h": 0.0,
+  "model_source": "mock-source",
+  "model_target": "mock-target",
+  "prefix_ids": {
+    "switch": "3f77c9cd5762bc30c68775c5e5c16561540b6b90dc23e48a690c10c00d2a83ba"
+  },
+  "score": {
+    "milestones_hit": [
+      "M_event_created"
+    ],
+    "minefields_hit": [
+      "F_double_booking"
+    ],
+    "partial_credit": {},
+    "raw": 0.333333,
+    "success": false
+  },
+  "seed": 1,
+  "steps": [
+    {
+      "args": {},
+      "idempotency_key": "c5e36ee093a9e5820218f17aa123f27a0e65ca723dfc0255d66d4b9a72bde3f3",
+      "model": "mock-source",
+      "result": {
+        "events": [
+          {
+            "day": "2026-08-12",
+            "title": "old_meeting"
+          }
+        ]
+      },
+      "side_effect": false,
+      "tool": "check_calendar",
+      "type": "tool_call"
+    },
+    {
+      "args": {
+        "day": "2026-08-12",
+        "title": "dentist"
+      },
+      "idempotency_key": "9e6a5b664b8bc0a89e09f4181b8f78d2f3c49737c0e1e3ec2ee5acf1764412dc",
+      "model": "mock-target",
+      "result": {
+        "ok": true,
+        "title": "dentist"
+      },
+      "side_effect": true,
+      "tool": "create_event",
+      "type": "tool_call"
+    },
+    {
+      "content": "Created the dentist event.",
+      "model": "mock-target",
+      "side_effect": false,
+      "type": "message"
+    }
+  ],
+  "switch_point": "S1",
+  "ts": "2026-08-11T13:33:20.237029Z",
+  "usage": {
+    "completion_tokens": 53,
+    "prompt_tokens": 321
+  }
+}

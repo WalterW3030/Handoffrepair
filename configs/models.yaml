@@ -1,16 +1,34 @@
 # Model pins. sha256 fields are filled at weight staging (prerequisite P4, Day 0) BEFORE freeze.
 # Exact precision is part of the version pin (advisor: "exact model versions").
+# Model pins. sha256 fields are filled at weight staging (Day 0) BEFORE freeze.
+# Exact checkpoint + precision is part of the version pin (advisor: "exact model versions").
+# ITEM 3: Llama-3.3-70B uses the OFFICIAL PREQUANTIZED checkpoint (Red Hat validated FP8-dynamic),
+# not on-the-fly quantization of the BF16 weights — the checkpoint itself is pinned, so there is
+# no quantization recipe to drift. Hardware: single H100 80GB ONLY.
 calibrated_pair_1:
-  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, sha256: TBD_AT_STAGING}
-  target: {hf_id: Qwen/Qwen3-8B, precision: fp16, sha256: TBD_AT_STAGING}
+  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
+  target: {hf_id: Qwen/Qwen3-8B, precision: fp16, quantization: none, sha256: TBD_AT_STAGING}
 calibrated_pair_2:
-  source: {hf_id: meta-llama/Llama-3.3-70B-Instruct, precision: fp8, sha256: TBD_AT_STAGING, gated: true}
-  target: {hf_id: Qwen/Qwen3-32B, precision: fp8, sha256: TBD_AT_STAGING}
+  source: {hf_id: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic, precision: fp8_e4m3_dynamic,
+           quantization: "prequantized checkpoint (llm-compressor, per-tensor dynamic); pinned, no recipe",
+           sha256: TBD_AT_STAGING, gated: true}
+  target: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
 held_out_pair:
-  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, sha256: TBD_AT_STAGING}
-  target: {hf_id: google/gemma-3-27b-it, precision: fp16, sha256: TBD_AT_STAGING, gated: true,
+  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
+  target: {hf_id: google/gemma-3-27b-it, precision: fp16, quantization: none, sha256: TBD_AT_STAGING, gated: true,
            tool_calling: prompt_based_json_via_vllm_structured_outputs}   # prerequisite P2
+user_simulator:
+  hf_id: Qwen/Qwen3-8B
+  precision: fp16
+  sha256: TBD_AT_STAGING
+  seed: 101
+hardware:
+  gpu: "1x NVIDIA H100 SXM5 80GB (ONLY — no A100 fallback; A100 lacks FP8 tensor cores and would
+        silently fall back to FP16, which is NOT precision-equivalent)"
+  vcpu_min: 16
+  ram_gb_min: 128
+  nvme_gb_min: 500
 serving:
   engine: vllm
-  vllm_version: TBD_AT_STAGING    # pinned at Day 0; must support Qwen3 tool parser
+  vllm_version: TBD_AT_STAGING    # pinned at Day 0 (container tag); must support Qwen3 hermes parser
   prefix_caching: required

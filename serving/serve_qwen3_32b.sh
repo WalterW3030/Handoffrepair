@@ -5,7 +5,8 @@
 set -euo pipefail
 vllm serve Qwen/Qwen3-32B \
   --quantization fp8 \
-  --max-model-len 32768 \
+  --max-model-len 16384 \
+  --gpu-memory-utilization 0.92 \
   --enable-prefix-caching \
   --enable-auto-tool-choice --tool-call-parser hermes \
   --port 8000

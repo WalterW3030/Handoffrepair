@@ -1,0 +1,6 @@
+PASS  full_success: {'success': True, 'raw': 1.0, 'milestones_hit': ['A', 'B'], 'partial_credit': {}, 'minefields_hit': []}
+PASS  partial_via_similar_edge: {'success': False, 'raw': 0.75, 'milestones_hit': ['A'], 'partial_credit': {'B': 0.5}, 'minefields_hit': []}
+PASS  minefield_hit: {'success': False, 'raw': 1.0, 'milestones_hit': ['A', 'B'], 'partial_credit': {}, 'minefields_hit': ['F']}
+PASS  nothing_achieved: {'success': False, 'raw': 0.0, 'milestones_hit': [], 'partial_credit': {}, 'minefields_hit': []}
+
+All scorer verification cases passed.

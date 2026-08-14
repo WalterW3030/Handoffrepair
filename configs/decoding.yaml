@@ -1,0 +1,27 @@
+# FROZEN decoding + runtime settings (advisor bundle item 4). Applies to every model, every cell.
+decoding:
+  temperature: 0.0            # deterministic; seed from configs/seeds.yaml governs any residual RNG
+  top_p: 1.0
+  max_new_tokens: 1024
+  seed_from: configs/seeds.yaml
+context:
+  max_model_len: 16384        # capped (not 128K) — keeps Llama-70B FP8 KV pool within H100 80GB
+  note: "16K covers ToolSandbox multi-turn trajectories with headroom; raising it post-freeze
+         requires a new tag"
+timeouts:
+  per_turn_seconds: 300
+  per_episode_seconds: 3600
+  on_timeout: "log episode as failed with gate_branch=timeout; NO retry beyond the frozen retry rule"
+retry_rule:
+  max_transport_retries: 3    # transport-level failures only (5xx/connection), same logical_op_id
+  semantic_retries: 0         # a parsed-but-wrong action is DATA, never retried
+tool_parsers:
+  Qwen/Qwen3-32B: hermes
+  Qwen/Qwen3-8B: hermes
+  RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic: llama3_json
+  google/gemma-3-27b-it: "none — serving/gemma_tool_shim.py owns the protocol (guided_json)"
+serving:
+  engine: vllm
+  gpu_memory_utilization: 0.92
+  enable_prefix_caching: true
+  enforce_eager: false

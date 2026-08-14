@@ -6,6 +6,7 @@
 set -euo pipefail
 : "${HF_TOKEN:?HF_TOKEN must be set (gated model)}"
 vllm serve google/gemma-3-27b-it \
-  --max-model-len 32768 \
+  --max-model-len 16384 \
+  --gpu-memory-utilization 0.92 \
   --enable-prefix-caching \
   --port 8000

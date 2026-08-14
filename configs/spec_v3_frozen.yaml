@@ -13,8 +13,12 @@ canonical_arguments:
     hash: sha256
 
 idempotency_key:
-  # detects duplicated actions across a handoff
-  formula: "H(tool, canonical_args, episode_id)"
+  # detects duplicated actions across a handoff AND across retries of the same logical operation
+  # REVISED (advisor bundle item 6): a stable logical-operation ID is issued by the runner when an
+  # operation is FIRST issued and is REUSED across retries and across the handoff — so a retry or a
+  # resumed handoff re-executing the same intended action produces the SAME key and is caught by V3.
+  formula: "sha256(tool || canonical_args || logical_op_id)"
+  logical_op_id: "uuid5(episode_id, op_index) — op_index assigned at first issue, carried in the ledger"
   hash: sha256
 
 objective:
@@ -46,6 +50,9 @@ gate:
 audit:
   extraction_sample: 0.10          # 10% stratified sample, human-scored
   precision_bar: 0.95              # predeclared field-level precision bar
+  recall_bar: 0.90                 # predeclared critical-field RECALL bar (advisor bundle item 6)
+  critical_fields: [G_edges, C_constraints, E_effects, S_side_effect_ids]   # recall audited on these
+  metrics: [precision, recall]     # both audited; recall on critical fields, precision overall
   note: "the ONLY manual touch in the entire pilot"
 
 freeze:
