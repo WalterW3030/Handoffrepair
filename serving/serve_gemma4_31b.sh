@@ -12,13 +12,14 @@
 #   The official recipe REQUIRES the dedicated chat template + reasoning parser [vLLM recipes].
 set -euo pipefail
 : "${VLLM_GEMMA4_OK:?set VLLM_GEMMA4_OK=1 after Day-0 verifies vLLM parses gemma-4 tool calls}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 vllm serve google/gemma-4-31b-it \
   --max-model-len 16384 \
   --gpu-memory-utilization 0.92 \
   --enable-prefix-caching \
   --enable-auto-tool-choice --tool-call-parser gemma4 \
   --reasoning-parser gemma4 \
-  --chat-template examples/tool_chat_template_gemma4.jinja \
+  --chat-template "${SCRIPT_DIR}/../examples/tool_chat_template_gemma4.jinja" \
   --port 8000
 
 #   PATH B (sglang fallback, verified working for gemma-4 tool calling in community reports):

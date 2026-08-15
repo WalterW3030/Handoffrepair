@@ -1,0 +1,5 @@
+# Dependency lock — CPU-verifiable harness (Python). Pinned for clean-environment reproduction.
+# GPU serving stack (vllm, torch, cuda) is pinned by CONTAINER DIGEST at Day 0 — see
+# configs/models.yaml serving.vllm_version and the staging-smoke run sheet.
+pytest==9.1.1
+PyYAML>=6.0
