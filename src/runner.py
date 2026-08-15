@@ -172,6 +172,7 @@ def run(episode, column, switch_point, source, target, seed, log_path,
     record = {
         "ts": datetime.datetime.utcnow().isoformat() + "Z",
         "episode_id": episode["episode_id"],
+        "family": episode.get("family"),
         "column": column,
         "switch_point": switch_point,
         "seed": seed,
