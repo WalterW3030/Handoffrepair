@@ -23,6 +23,52 @@ from scoring import dag as dag_scorer
 _OP_NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 
+class TransportError(Exception):
+    """Transport-level failure (5xx/connection) — retryable, reuses the logical op-ID.
+    A parsed-but-wrong action is DATA (semantic_retries=0), never a TransportError."""
+
+
+class IdempotencyLedger:
+    """Issues/carries logical operation IDs and enforces duplicate suppression.
+
+    Operation identity is CONTENT-BASED (episode, tool, canonical args) — NOT positional —
+    so a target that repeats an already-completed state-changing call after handoff maps to
+    the SAME logical operation and is suppressed. A single logical operation may have several
+    attempts (transport retries); all share the logical_op_id, each gets its own attempt_no.
+    """
+
+    def __init__(self, episode_id):
+        self.episode_id = episode_id
+        self.ops = {}        # logical_op_id -> {"status": ..., "result": ..., "key": ...}
+
+    def _op_id(self, tool, canonical_args):
+        return str(uuid.uuid5(_OP_NS, prefix_cache.canonical(
+            {"episode_id": self.episode_id, "tool": tool, "canonical_args": canonical_args})))
+
+    def key(self, tool, canonical_args):
+        return prefix_cache.hashlib.sha256(prefix_cache.canonical(
+            {"tool": tool, "canonical_args": canonical_args,
+             "logical_op_id": self._op_id(tool, canonical_args)}).encode()).hexdigest()
+
+    def before_execute(self, tool, canonical_args, side_effect):
+        """Pre-execution lookup. Returns (logical_op_id, idem_key, decision, prior_result).
+        decision in: 'execute' | 'suppress' (duplicate side-effect already done)."""
+        oid = self._op_id(tool, canonical_args)
+        key = self.key(tool, canonical_args)
+        prior = self.ops.get(oid)
+        if side_effect and prior and prior["status"] == "executed":
+            return oid, key, "suppress", prior["result"]
+        return oid, key, "execute", None
+
+    def record(self, oid, key, status, result=None):
+        """status in: 'executed' | 'suppressed' | 'replayed'. A 'suppressed' attempt must NOT
+        overwrite a prior 'executed' record — the operation stays executed for future lookups."""
+        prior = self.ops.get(oid)
+        if status == "suppressed" and prior and prior["status"] == "executed":
+            return                       # keep the executed record (and its result)
+        self.ops[oid] = {"status": status, "result": result, "key": key}
+
+
 def _derive(state):
     """Derived flags consumed by DAG predicates (see synthetic_episodes)."""
     s = dict(state)
@@ -34,7 +80,7 @@ def _derive(state):
 
 
 def run(episode, column, switch_point, source, target, seed, log_path,
-        world_impl=None, handoff=None):
+        world_impl=None, handoff=None, retry_config=None):
     world_impl = world_impl or world.TOOLS
     messages = [{"role": "system", "content": episode["system"]},
                 {"role": "user", "content": episode["user"]}]
@@ -42,13 +88,31 @@ def run(episode, column, switch_point, source, target, seed, log_path,
     trajectory = [_derive(copy.deepcopy(state))]
     steps, prefix_ids, checks_fired = [], {}, []
     usage = {"prompt_tokens": 0, "completion_tokens": 0}
+    ledger = IdempotencyLedger(episode["episode_id"])   # carried across the handoff:
+    # the target inherits the source's executed operations, so cross-handoff duplicates suppress
 
-    model = source if column == "b1" else target
+    # b0: target runs from the start (no handoff). All handoff columns (b1/b2a/b3/compiler)
+    # run the SOURCE to the switch point first — this produces the shared prefix snapshot that
+    # strict pairing compares across columns.
+    model = target if column == "b0" else source
     expected_len = len(episode["source_script"])
     switched = False
+    retry_cfg = (retry_config or {}).get("retry_rule", {})
+    max_transport_retries = retry_cfg.get("max_transport_retries", 3)
 
     for _ in range(episode["max_turns"]):
-        out = model.generate(messages, tools=list(world_impl))
+        # --- transport-level retry: same logical operation, reused op-ID (advisor item 5) ---
+        attempt, out = 0, None
+        while True:
+            try:
+                out = model.generate(messages, tools=list(world_impl))
+                break
+            except TransportError as te:
+                attempt += 1
+                if attempt > max_transport_retries:
+                    raise
+                checks_fired.append(f"transport_retry:{attempt}")
+                continue                        # retry SAME turn; op-ID assigned below is stable
         act = out["action"]
         usage["prompt_tokens"] += out["usage"]["prompt_tokens"]
         usage["completion_tokens"] += out["usage"]["completion_tokens"]
@@ -56,17 +120,22 @@ def run(episode, column, switch_point, source, target, seed, log_path,
         step = {"model": model.name, **act}
         if act["type"] == "tool_call":
             spec = world_impl[act["tool"]]
+            canonical_args = act.get("args", {})
             step["side_effect"] = spec["side_effect"]
-            step["result"] = spec["fn"](state, act.get("args", {}))
-            # stable logical-operation ID: issued at first issue, REUSED across retries
-            # and across the handoff (item 6). op_index = count of tool calls so far.
-            op_index = sum(1 for s in steps if s["type"] == "tool_call")
-            step["logical_op_id"] = str(uuid.uuid5(
-                _OP_NS, f"{episode['episode_id']}:{op_index}"))
-            step["idempotency_key"] = prefix_cache.hashlib.sha256(
-                prefix_cache.canonical(
-                    {"tool": act["tool"], "canonical_args": act.get("args", {}),
-                     "logical_op_id": step["logical_op_id"]}).encode()).hexdigest()
+            # 1. ISSUE/CARRY the logical-op ID and key BEFORE execution (advisor item 5)
+            oid, key, decision, prior = ledger.before_execute(
+                act["tool"], canonical_args, spec["side_effect"])
+            step["logical_op_id"] = oid
+            step["idempotency_key"] = key
+            # 2. PRE-EXECUTION suppression: duplicate side-effect => do NOT re-execute
+            if decision == "suppress":
+                step["execution"] = "suppressed"          # logged: not performed
+                step["result"] = prior                    # reuse prior result, world unchanged
+                checks_fired.append("V3_duplicate_suppressed")
+            else:
+                step["result"] = spec["fn"](state, canonical_args)   # execute once
+                step["execution"] = "executed"
+            ledger.record(oid, key, step["execution"], step["result"])
             messages.append({"role": "assistant", "content": prefix_cache.canonical(act)})
             messages.append({"role": "tool", "content": prefix_cache.canonical(step["result"])})
         else:
@@ -76,12 +145,19 @@ def run(episode, column, switch_point, source, target, seed, log_path,
         steps.append(step)
         trajectory.append(_derive(copy.deepcopy(state)))
 
-        # --- handoff logic ---
-        if column == "b1" and not switched and \
+        # --- handoff logic (all handoff columns share the identical prefix snapshot) ---
+        if column != "b0" and switch_point is not None and not switched and \
                 switch_points.reached(steps, switch_point, expected_len):
             prefix_ids["switch"] = prefix_cache.prefix_id(messages)
             checks_fired.append(f"switch_reached:{switch_point}")
-            model = handoff(model=target, messages=messages, state=state) if handoff else target
+            # every column receives the SAME messages + world snapshot; the hook decides
+            # what the target actually continues from (raw transcript / summary / typed state
+            # / compiled handoff). prefix_ids["switch"] is the pairing anchor for all columns.
+            if handoff:
+                model, messages = handoff(model=target, messages=messages, state=state,
+                                          steps=steps)
+            else:
+                model = target
             switched = True
 
         if act["type"] == "message":

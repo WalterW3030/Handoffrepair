@@ -4,7 +4,7 @@
 #      at Day 0 (P3 restriction: no external-web-service tools; simulator seeds fixed)
 smoke_episodes: [smoke_morning_1, smoke_morning_2, smoke_event_1, smoke_event_2, smoke_event_3]
 pilot_episode_set: TBD_AT_DAY0_SELECTION
-switch_points: [S1, S2, S3]     # S2 (after state-changing call) is the decisive point
-episodes_per_cell: "30-50 paired episodes (2 calibrated pairs main runs); held-out pair zero-shot"
+# NOTE: episodes_per_cell, seeds, columns and their switch-point applicability are DEFINED ONLY in
+# configs/sizing.yaml (single source of truth). This file holds only the episode ID lists.
 calibration_budget:
   episodes_per_pair: 20          # exactly 20, then compiler frozen

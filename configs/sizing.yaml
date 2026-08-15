@@ -1,0 +1,27 @@
+# SINGLE SOURCE OF TRUTH for pilot sizing (advisor item 3).
+# Every other file (episodes.yaml, seeds.yaml, run_pilot.py, manifest) DERIVES from this.
+# Rule: B0 has NO switch point — it is enumerated per (pair, episode, seed) only.
+pilot:
+  episodes_per_cell: 20          # E; reconciled from measurement at Day-1 calibration
+  seeds_calibrated: [1, 2]       # 2 seeds on calibrated pairs
+  seeds_heldout: [1]             # 1 seed on the held-out pair (zero-shot claim)
+  columns_calibrated: [B0, B1, B2a, B3, compiler]
+  columns_heldout: [B0, B1, compiler]    # zero-shot recovery needs only these
+  switch_points: [S1, S2, S3]    # apply to ALL columns EXCEPT B0
+  pairs:
+    calibrated: [pair1_32to8, pair2_70to32]
+    heldout: [heldout_32to27]
+budget:
+  hard_gpu_hour_cap: 20.0        # pilot window; sizing must fit inside this
+  model_load_overhead_h: 0.5
+  b6_yardstick_h: 2.5
+  b6_rollouts: 150
+rates:
+  # planning fallback ONLY — replaced by measured values at Day-1 calibration.
+  # clearly separated per advisor requirement; never mixed into final accounting.
+  planning_seconds_per_run: {pair1_32to8: 30, pair2_70to32: 75, heldout_32to27: 40}
+  measured_seconds_per_run: null   # filled from logs/measured_rates.json
+# Derived enumeration (generated, do not hand-edit):
+#   calibrated: E * (1 + 4*3) runs/pair/seed  = 20*13 = 260; x2 pairs x2 seeds = 1040
+#   heldout:    E * (1 + 2*3) runs/seed       = 20*7  = 140; x1 pair  x1 seed  = 140
+#   total runs = 1180

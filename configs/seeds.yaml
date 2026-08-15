@@ -1,8 +1,7 @@
-# Seed table — every stochastic component draws from here. No ad-hoc seeds anywhere else.
+# Seed table — DERIVED FROM configs/sizing.yaml (single source of truth).
+# Column seeds are read from sizing.yaml:seeds_calibrated / seeds_heldout at runtime.
 master_seed: 20260811
 user_simulator: 101
 episode_sampler: 202
 extraction_audit_sampler: 303
-column_b0: [1, 2, 3]
-column_b1: [1, 2, 3]
-# B2a/B3/compiler seeds added at Day 2/3 from this file (append-only after freeze)
+# per-column seed lists: see sizing.yaml (calibrated pairs: [1,2]; held-out pair: [1])
