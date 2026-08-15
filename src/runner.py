@@ -164,6 +164,11 @@ def run(episode, column, switch_point, source, target, seed, log_path,
             break
 
     score = dag_scorer.score(trajectory, episode["dag"])
+    gate_result = None
+    if column != "b0" and switch_point is not None:
+        import gate as gate_mod
+        gate_result = gate_mod.evaluate(steps, seed=seed)
+        checks_fired.append(f"gate:{gate_result['branch']}")
     record = {
         "ts": datetime.datetime.utcnow().isoformat() + "Z",
         "episode_id": episode["episode_id"],
@@ -175,7 +180,8 @@ def run(episode, column, switch_point, source, target, seed, log_path,
         "prefix_ids": prefix_ids,
         "steps": steps,
         "checks_fired": checks_fired,
-        "gate_branch": None,                # gate arrives Day 2
+        "gate_branch": gate_result["branch"] if gate_result else None,
+        "gate_detail": gate_result,
         "usage": usage,
         "gpu_h": 0.0, "cash": 0.0,          # CPU mock; real values on GPU
         "score": score,
