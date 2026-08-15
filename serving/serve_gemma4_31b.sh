@@ -13,7 +13,7 @@
 set -euo pipefail
 : "${VLLM_GEMMA4_OK:?set VLLM_GEMMA4_OK=1 after Day-0 verifies vLLM parses gemma-4 tool calls}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-vllm serve google/gemma-4-31b-it \
+vllm serve google/gemma-4-31B-it \
   --max-model-len 16384 \
   --gpu-memory-utilization 0.92 \
   --enable-prefix-caching \
@@ -24,7 +24,7 @@ vllm serve google/gemma-4-31b-it \
 
 #   PATH B (sglang fallback, verified working for gemma-4 tool calling in community reports):
 # docker run --gpus all --ipc=host --shm-size 32g -p 8000:30000 lmsysorg/sglang:v0.5.14 \
-#   sglang serve --model-path google/gemma-4-31b-it --tool-call-parser gemma4 \
+#   sglang serve --model-path google/gemma-4-31B-it --tool-call-parser gemma4 \
 #     --reasoning-parser gemma4 --mem-fraction-static 0.92 --host 0.0.0.0 --port 30000
 #
 # Either way, the gemma_tool_shim.py prompt-fallback REMAINS as a last resort if neither parser

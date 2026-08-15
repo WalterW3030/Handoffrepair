@@ -29,7 +29,7 @@ python -c "import torch,sys;print('torch',torch.__version__,'cuda',torch.version
 docker inspect --format='{{index .RepoDigests 0}}' <vllm-image>   # container digest -> models.yaml
 
 # 1. weight staging + per-file hashes (~275GB, network-bound; GPU idle)
-for m in Qwen/Qwen3-32B Qwen/Qwen3-8B RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic google/gemma-4-31b-it; do
+for m in Qwen/Qwen3-32B Qwen/Qwen3-8B RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic google/gemma-4-31B-it; do
   huggingface-cli download "$m" --revision <pinned-commit>
 done
 python tools/hash_weights.py --out configs/models.yaml   # per-file SHA-256 manifest

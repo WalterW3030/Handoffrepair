@@ -15,6 +15,10 @@ Usage:
 import argparse, sys, yaml
 
 BANNED_NAMESPACE = "rapid_api_search_tools"
+# The allow list carries BARE tool names (no namespace prefix), verified against
+# tool_sandbox/tools/rapid_api_search_tools.py at the pinned commit: the external
+# web-service tools are exactly these two.
+BANNED_TOOLS = {"search_stock", "search_lat_lon"}
 KEEP_CATEGORIES = {"MULTIPLE_TOOL_CALL", "MULTIPLE_USER_TURN"}   # pilot needs stateful multi-turn
 
 
@@ -45,11 +49,14 @@ def main():
     from tool_sandbox.scenarios.multiple_tool_call_scenarios import named_multiple_tool_call_scenarios
     from tool_sandbox.scenarios.multiple_user_turn_scenarios import named_multiple_user_turn_scenarios
 
+    # Pinned commit 165848b exposes ONLY ToolBackend.DEFAULT (no HERMES member yet).
+    backend = getattr(ToolBackend, "HERMES", ToolBackend.DEFAULT)
     kept, dropped = [], []
     for registry in (named_multiple_tool_call_scenarios, named_multiple_user_turn_scenarios):
-        for name, scenario in registry(preferred_tool_backend=ToolBackend.HERMES).items():
+        for name, scenario in registry(preferred_tool_backend=backend).items():
             tools = scenario_tool_names(scenario)
-            (dropped if any(BANNED_NAMESPACE in t for t in tools) else kept).append(name)
+            banned = tools & BANNED_TOOLS or {t for t in tools if BANNED_NAMESPACE in t}
+            (dropped if banned else kept).append(name)
 
     with open(args.out, "w") as f:
         yaml.safe_dump({

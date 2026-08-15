@@ -1,0 +1,56 @@
+generated: '2026-08-15'
+source: huggingface.co /api/models + /tree (LFS oid = sha256)
+verify_at_staging: snapshot_download(revision=<sha>) then sha256sum each file; mismatch
+  aborts Day 0
+models:
+  Qwen/Qwen3-32B:
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    safetensors_sha256:
+      model-00001-of-00017.safetensors: 52562b2ff97b61764260273e71bf5b4cf8a66f569399398f26dec0300fcf1316
+      model-00002-of-00017.safetensors: e26764b2c6878e3fb7198895fa833ec62838d84a19665e6abfbae43c6daf02b3
+      model-00003-of-00017.safetensors: 6c5ba7bed9c52bc121e75cbe8a7be46936d0006cc80f42a6d5886ed40b4c2a62
+      model-00004-of-00017.safetensors: f736f6ac4d8c30866107fb1185a05b3c3cfce9717720082f466fa44e691bcec8
+      model-00005-of-00017.safetensors: a52ed375c083209c54d42ac510afeb1fbb5af4f193be2dc7d103f665a0f212d3
+      model-00006-of-00017.safetensors: 37fae28990b0e4a70228549d040c0393e87bee3820d59e58e47844974d8dff5b
+      model-00007-of-00017.safetensors: 37776006aeaba29eca8bc73b2b963fe3477e1c2e3f6a27cb9527be75b905e1bf
+      model-00008-of-00017.safetensors: 73e74e9129674fe330948005075d70ab4fa0b92b68fb220c5a693f9cea553730
+      model-00009-of-00017.safetensors: a044b3602a01bd8ea62ff51badf9cc038ab1d73d97399480e6a55b4c86fa7fa6
+      model-00010-of-00017.safetensors: 9966612ba7ecfc2cd2e592fb95224b86d743271ff88e172cc272a4b26382aa75
+      model-00011-of-00017.safetensors: e2a058a0ac7d4b992b731c29221ecfb4b76b8a48d9004d0e8a62ba44f699845c
+      model-00012-of-00017.safetensors: 58a1aa89093fea07325f787072a468e3482a470ff4b7fe5ead5f749683907c40
+      model-00013-of-00017.safetensors: 35f3381bab31a23370c37d922290aeecdf603418336058fb86fe42d8f51ac40c
+      model-00014-of-00017.safetensors: 8713b062ddc178acf5917610b7f4b64eede833b2ea4aa37bd562dcf2f3a3339d
+      model-00015-of-00017.safetensors: bec439d23931821a236d8f62fa79deecf5551bd25602278aa2ae0ce432b378cf
+      model-00016-of-00017.safetensors: e569139fadd61fe7c8f9eb1c976d9a627cae48c57ddf228cfbd0593c59c64ff7
+      model-00017-of-00017.safetensors: 1f47c318fcd7797c0f85b4233cb754438b10e795b8bc874889090c416a94bd38
+  Qwen/Qwen3-8B:
+    revision: b968826d9c46dd6066d109eabc6255188de91218
+    safetensors_sha256:
+      model-00001-of-00005.safetensors: 31d6a825ae35f11fb85b195b4c42c146c051e446433125a215336abdf95cbf5f
+      model-00002-of-00005.safetensors: 5991236cea6fe21f3d43cab0f0e84448734fbbe0789816202989f2ddc9d18282
+      model-00003-of-00005.safetensors: c5185c4794be2d8a9784d5753c9922db38df478ce11f9ed0b415b7304d896836
+      model-00004-of-00005.safetensors: b5ee7de71fbf17db3d5704e0c8f2bc7d005ca9e1d7ca2aeb19827b0cfcaa917a
+      model-00005-of-00005.safetensors: 20c2d6366ab85c90786ccdd829cd2b9e7d30ef3b2ebbb998280e7e4014b542ff
+  RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic:
+    revision: f50dbad2c84590ca17dc51e207c34321b65ff14b
+    safetensors_sha256:
+      model-00001-of-00015.safetensors: 26553c819170dddaad40ddcb19ca9e6c59d84cd756e10b510646b760b3a4fb9c
+      model-00002-of-00015.safetensors: 70ccbc9a84eea03b88749fae8d3088027f83ef2fb4957ebd8babf7bcde9494c4
+      model-00003-of-00015.safetensors: bdcc191e6a64d0db47f2971435f2e83482fdc9fb50bb17ceebd8c2617d29c68a
+      model-00004-of-00015.safetensors: 89b9dfccba407aa0493bf9cd093c24f9906398abc8111dd4fdfdd2c2f031f9b2
+      model-00005-of-00015.safetensors: ae8fae8a41de7bb834a58041415385f74524c14c675d80747205008625231c21
+      model-00006-of-00015.safetensors: 36fcbf7a4216d390a1b92dc9f2e9349dfc5087100d89aa6fab77682f53fec178
+      model-00007-of-00015.safetensors: 4baae3a6459a67c1aba3376631d0cca747c6e32de416f2c464487ee45a418025
+      model-00008-of-00015.safetensors: 7e27734cb30d49febc50747a3a43efb9de7fb3cc7ef12b512fd230941e6ddd21
+      model-00009-of-00015.safetensors: 3cd5870c784f91a31c9b757ce250a109c438bc7524f8b3d9a4f8e4bd6eba4ece
+      model-00010-of-00015.safetensors: 4d21e7fcf1a92809d0bff7be1dcab52336cfedf0d9effc8f54862211439e7ce2
+      model-00011-of-00015.safetensors: 398592a4cbd134680fb8f88733d110ea5d3e73f85a4057a1a648b1794f96f394
+      model-00012-of-00015.safetensors: 397305cb87ab436e4bf30b4661645d7225ff4d374cc328c1d4aebae176619489
+      model-00013-of-00015.safetensors: a8a17b3cdc855b678c65c6df06885ac6bcc3620af49123e2037041c18f082f9e
+      model-00014-of-00015.safetensors: f8c1e80316ea40fd6333f9d8c7bc790851c8e4c8f7fb029e0f4cfef54ed49523
+      model-00015-of-00015.safetensors: 911fbc0804ed3a4d48c6824c92af512de48926d07ce5878e44f72300bbbb79cb
+  google/gemma-4-31B-it:
+    revision: 842da3794eaa0b77d5f08bae87a17459d91ff475
+    safetensors_sha256:
+      model-00001-of-00002.safetensors: eeef8791537bc04f110967c513149e037d2a9ae97d49add7291ebfa62806bbfa
+      model-00002-of-00002.safetensors: 018912220f559f7025d60333e0996183cd538aa77ad6f4988a89ce47be681f10

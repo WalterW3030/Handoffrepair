@@ -23,7 +23,7 @@ CFG = lambda n: yaml.safe_load(open(os.path.join(ROOT, "configs", n)))
 PAIRS = {
     "pair1_32to8":    ("Qwen/Qwen3-32B", "Qwen/Qwen3-8B"),
     "pair2_70to32":   ("RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic", "Qwen/Qwen3-32B"),
-    "heldout_32to27": ("Qwen/Qwen3-32B", "google/gemma-4-31b-it"),
+    "heldout_32to31": ("Qwen/Qwen3-32B", "google/gemma-4-31B-it"),
 }
 COLUMNS_ALL  = ["B0", "B1", "B2a", "B3", "compiler"]
 COLUMNS_HELD = ["B0", "B1", "compiler"]          # zero-shot recovery needs only these
@@ -44,7 +44,7 @@ def size_pilot(rates, budget_h=20.0):
         runs_held = (E + 2*E*3) * 1 * 1          # held-out: 3 cols, 1 pair, 1 seed
         if rates:
             sec = (runs_cal//2)*(rates["pair1_32to8"]["sec"] + rates["pair2_70to32"]["sec"]) \
-                  + runs_held * rates["heldout_32to27"]["sec"]
+                  + runs_held * rates["heldout_32to31"]["sec"]
         else:
             sec = (runs_cal//2)*(30 + 75) + runs_held * 40      # planning fallback
         total_h = sec/3600 + 0.5 + 2.5           # + model loads + B6
@@ -64,7 +64,7 @@ def main():
         runs = []
         for pair in ("pair1_32to8", "pair2_70to32"):
             runs += manifest.enumerate_runs([pair], COLUMNS_ALL, SWITCH_POINTS, episodes, [1, 2])
-        runs += manifest.enumerate_runs(["heldout_32to27"], COLUMNS_HELD, SWITCH_POINTS, episodes, [1])
+        runs += manifest.enumerate_runs(["heldout_32to31"], COLUMNS_HELD, SWITCH_POINTS, episodes, [1])
         out = {"episodes_per_cell": E, "est_gpu_h": est_h,
                **manifest.summarize(runs), "runs": runs}
         json.dump(out, open(os.path.join(ROOT, "logs", "run_manifest.json"), "w"), indent=2)

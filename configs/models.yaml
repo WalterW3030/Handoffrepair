@@ -1,32 +1,46 @@
-# Model pins. sha256 fields are filled at weight staging (prerequisite P4, Day 0) BEFORE freeze.
-# Exact precision is part of the version pin (advisor: "exact model versions").
-# Model pins. sha256 fields are filled at weight staging (Day 0) BEFORE freeze.
-# Exact checkpoint + precision is part of the version pin (advisor: "exact model versions").
+# Model pins — FULLY PINNED (2026-08-15). Exact checkpoint = hf_id + revision commit + per-file
+# safetensors sha256 (see configs/weight_sha256.lock). Precision is part of the version pin.
 # ITEM 3: Llama-3.3-70B uses the OFFICIAL PREQUANTIZED checkpoint (Red Hat validated FP8-dynamic),
 # not on-the-fly quantization of the BF16 weights — the checkpoint itself is pinned, so there is
 # no quantization recipe to drift. Hardware: single H100 80GB ONLY.
+# Hash provenance: revision commits and LFS sha256 oids read from the HF Hub API (2026-08-15);
+# re-verified against the downloaded files at Day-0 staging (mismatch aborts the run).
 calibrated_pair_1:
-  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
-  target: {hf_id: Qwen/Qwen3-8B, precision: fp16, quantization: none, sha256: TBD_AT_STAGING}
+  source: {hf_id: Qwen/Qwen3-32B, revision: "9216db5781bf21249d130ec9da846c4624c16137",
+           precision: fp8, quantization: "vllm --quantization fp8 (dynamic)",
+           sha256: "configs/weight_sha256.lock#Qwen/Qwen3-32B", gated: false, license: apache-2.0}
+  target: {hf_id: Qwen/Qwen3-8B, revision: "b968826d9c46dd6066d109eabc6255188de91218",
+           precision: fp16, quantization: none,
+           sha256: "configs/weight_sha256.lock#Qwen/Qwen3-8B", gated: false, license: apache-2.0}
 calibrated_pair_2:
-  source: {hf_id: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic, precision: fp8_e4m3_dynamic,
+  source: {hf_id: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic,
+           revision: "f50dbad2c84590ca17dc51e207c34321b65ff14b",
+           precision: fp8_e4m3_dynamic,
            quantization: "prequantized checkpoint (llm-compressor, per-tensor dynamic); pinned, no recipe",
-           sha256: TBD_AT_STAGING, gated: true}
-  target: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
+           sha256: "configs/weight_sha256.lock#RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic",
+           gated: false, license: llama3.3}
+           # NOTE: the RedHatAI repo itself is NOT gated (verified via Hub API 2026-08-15);
+           # the user's Meta Llama-3.3 license acceptance is on record regardless.
+  target: {hf_id: Qwen/Qwen3-32B, revision: "9216db5781bf21249d130ec9da846c4624c16137",
+           precision: fp8, quantization: "vllm --quantization fp8 (dynamic)",
+           sha256: "configs/weight_sha256.lock#Qwen/Qwen3-32B", gated: false, license: apache-2.0}
 held_out_pair:
-  source: {hf_id: Qwen/Qwen3-32B, precision: fp8, quantization: "vllm --quantization fp8 (dynamic)", sha256: TBD_AT_STAGING}
+  source: {hf_id: Qwen/Qwen3-32B, revision: "9216db5781bf21249d130ec9da846c4624c16137",
+           precision: fp8, quantization: "vllm --quantization fp8 (dynamic)",
+           sha256: "configs/weight_sha256.lock#Qwen/Qwen3-32B", gated: false, license: apache-2.0}
   # SWITCHED Gemma-3-27B -> Gemma-4-31B (user decision 2026-08-11): Apache 2.0 (no gating),
   # modern, still a different family than Qwen/Llama so held-out "interface distance" is preserved.
-  target: {hf_id: google/gemma-4-31b-it, precision: bf16, quantization: none, sha256: TBD_AT_STAGING,
+  # HF repo id is case-sensitive: google/gemma-4-31B-it (capital B).
+  target: {hf_id: google/gemma-4-31B-it, revision: "842da3794eaa0b77d5f08bae87a17459d91ff475",
+           precision: bf16, quantization: none,
+           sha256: "configs/weight_sha256.lock#google/gemma-4-31B-it",
            gated: false, license: "Apache-2.0",
-           tool_calling: "NATIVE (<|tool_call>...<tool_call|>) — but see P2 blocker in serving notes"}
-  # PROBLEM (flagged): Gemma-4 tool calling is UNRELIABLE in vLLM as of v0.24.0; the native
-  # <|tool_call> format is not parsed by all servers. Day-0 must verify the pinned vLLM version
-  # parses gemma-4 tool calls (or use sglang with --tool-call-parser gemma4). See serve_gemma4_31b.sh.
+           tool_calling: "NATIVE (<|tool_call>...<tool_call|>) — see P2 gate in serving notes"}
 user_simulator:
   hf_id: Qwen/Qwen3-8B
+  revision: "b968826d9c46dd6066d109eabc6255188de91218"
   precision: fp16
-  sha256: TBD_AT_STAGING
+  sha256: "configs/weight_sha256.lock#Qwen/Qwen3-8B"
   seed: 101
 hardware:
   gpu: "1x NVIDIA H100 SXM5 80GB (ONLY — no A100 fallback; A100 lacks FP8 tensor cores and would
@@ -35,6 +49,22 @@ hardware:
   ram_gb_min: 128
   nvme_gb_min: 500
 serving:
+  # Qwen3 / Llama endpoints: vLLM pinned to 0.27.1 (PyPI release, Aug 2026).
+  # Container: vllm/vllm-openai:v0.27.1 (digest recorded at Day-0 pull; tag is immutable).
   engine: vllm
-  vllm_version: TBD_AT_STAGING    # pinned at Day 0 (container tag); must support Qwen3 hermes parser
+  vllm_version: "0.27.1"
   prefix_caching: required
+  gemma_endpoint:
+    # P2 GATE (Day-0 blocker, unchanged): Gemma-4 tool-call parsing in vLLM is still reported
+    # unreliable as of v0.24.0 (upstream issues #39468, #44522; parser leaks raw tokens).
+    # Both options below are PINNED; the choice between them is a predeclared decision rule,
+    # not a TBD:
+    #   1) serve gemma-4-31B-it with vllm 0.27.1 + --tool-call-parser gemma4
+    #      --reasoning-parser gemma4 + vendored examples/tool_chat_template_gemma4.jinja
+    #      (sha256 afdbb2ab...3b8927); run the frozen 20-probe tool-call set.
+    #   2) IF parse/structure success < 100% on the probe set -> switch THIS ENDPOINT ONLY to
+    #      sglang v0.5.14 (pinned; reported working for gemma4 tool calling, Jul 2026) with the
+    #      same probe gate. gemma_tool_shim.py remains the last-resort fallback (tested).
+    primary: {engine: vllm, version: "0.27.1", parser: gemma4}
+    fallback: {engine: sglang, version: "0.5.14", parser: gemma4}
+    gate: "20/20 frozen probe tool calls parse correctly, else fallback; else shim; else STOP"

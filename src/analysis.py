@@ -76,7 +76,7 @@ def go_no_go(records):
     m, lo, hi = hierarchical_bootstrap(gf) if gap32 else (0, 0, 0)
     q2 = lo > 0
     # Q3: held-out recovery >= 0.5
-    held = [r for r in records if r["pair"] == "heldout_32to27"] if any("pair" in r for r in records) else records
+    held = [r for r in records if r["pair"] == "heldout_32to31"] if any("pair" in r for r in records) else records
     rec = epsilon_guarded_recovery(held or records)
     q3 = (statistics.mean(list(rec.values())) >= RECOVERY_THRESHOLD) if rec else False
     # Q4: gate reduces harmful repairs/duplicates without restarting most episodes

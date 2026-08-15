@@ -44,7 +44,7 @@ class GemmaToolShim:
     as MockModel / the vLLM hermes client, so the runner never knows which
     model interface it is talking to (manifest records the difference)."""
 
-    def __init__(self, client, model_name="google/gemma-4-31b-it"):
+    def __init__(self, client, model_name="google/gemma-4-31B-it"):
         self.client = client          # openai-compatible vLLM client
         self.name = model_name
 

@@ -3,7 +3,11 @@
 #  (2) pilot: ToolSandbox self-contained scenarios, selected by src/toolsandbox/select_scenarios.py
 #      at Day 0 (P3 restriction: no external-web-service tools; simulator seeds fixed)
 smoke_episodes: [smoke_morning_1, smoke_morning_2, smoke_event_1, smoke_event_2, smoke_event_3]
-pilot_episode_set: TBD_AT_DAY0_SELECTION
+# RESOLVED 2026-08-15: enumerated CPU-side from the pinned ToolSandbox commit
+# 165848b9a78cead7ca7fe7c89c688b58e6501219 by src/toolsandbox/select_scenarios.py.
+# 78 self-contained scenarios kept (MULTIPLE_TOOL_CALL + MULTIPLE_USER_TURN);
+# 4 excluded (search_stock / search_lat_lon — rapid_api_search_tools external web services).
+pilot_episode_set: "configs/episodes_pilot.yaml#pilot_episode_set"
 # NOTE: episodes_per_cell, seeds, columns and their switch-point applicability are DEFINED ONLY in
 # configs/sizing.yaml (single source of truth). This file holds only the episode ID lists.
 calibration_budget:

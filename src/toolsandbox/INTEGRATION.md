@@ -32,6 +32,9 @@ License: Apple open-source (see LICENSE in repo). Clone at Day 0 must `git check
 
 1. `git clone … && git checkout 165848b9a…`
 2. `pip install -e .` on the GPU machine
-3. `python src/toolsandbox/select_scenarios.py --repo <clone> --out configs/episodes_pilot.yaml`
-4. Record the resulting pilot episode set in `configs/episodes.yaml` (replacing `TBD_AT_DAY0_SELECTION`)
-   **before** applying tag `pilot-freeze-v1`.
+3. ~~`python src/toolsandbox/select_scenarios.py …`~~ DONE CPU-side 2026-08-15:
+   `configs/episodes_pilot.yaml` is committed (78 kept / 4 excluded) and referenced from
+   `configs/episodes.yaml`. Re-running the selector at Day 0 is a VERIFICATION step only
+   (output must diff-clean against the committed file; any diff aborts Day 0).
+4. Episode set is FROZEN. Remaining Day-0 items: weight staging + hash re-verification
+   against `configs/weight_sha256.lock`, gemma4 parser probe gate, measured-rate calibration.
