@@ -46,7 +46,8 @@ def main():
             r1 = b1.run_b1(ep, sp, src(), tgt(), SEED, LOG)
             results.append(r1)
 
-            # strict pairing check: re-run identical (episode, switch) -> identical prefix
+            # strict pairing check: re-run identical (episode, switch) WITHOUT appending to the
+            # log (log_path=None) — the pairing check must not inflate the record count.
             r2 = b1.run_b1(ep, sp, src(), tgt(), SEED, None)
             prefix_cache.assert_paired([r1["prefix_ids"]["switch"], r2["prefix_ids"]["switch"]])
 
