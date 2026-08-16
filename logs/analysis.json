@@ -1,0 +1,26 @@
+{
+  "n_records": 33,
+  "go_no_go": {
+    "Q1": {
+      "pass": false,
+      "mean_drop": 0.0,
+      "regions_clear": 0
+    },
+    "Q2": {
+      "pass": false,
+      "ci": [
+        0,
+        0,
+        0
+      ]
+    },
+    "Q3": {
+      "pass": false,
+      "mean_recovery": null
+    },
+    "Q4": {
+      "pass": true,
+      "restart_rate": 0.0
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "kind": "cpu_mock",
+  "pair1_32to8": {
+    "sec": 0.161,
+    "tokens": null,
+    "n_runs": 4,
+    "episodes": 2
+  },
+  "pair2_70to32": {
+    "sec": 0.155,
+    "tokens": null,
+    "n_runs": 4,
+    "episodes": 2
+  },
+  "heldout_32to31": {
+    "sec": 0.153,
+    "tokens": null,
+    "n_runs": 4,
+    "episodes": 2
+  }
+}
