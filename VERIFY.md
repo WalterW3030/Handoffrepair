@@ -43,10 +43,10 @@ across handoff columns; final REMINDER world state byte-identical across all fiv
 
 - Python harness: `requirements-lock.txt` (pinned).
 - ToolSandbox deps: pinned versions listed above (recorded in `src/toolsandbox/INTEGRATION.md`).
-- GPU serving stack: pinned by **container image digest** at Day 0 staging (recorded into
-  `configs/models.yaml: serving.vllm_version`), because the digest is only resolvable once the
-  exact vLLM/PyTorch/CUDA/driver combination is chosen on the H100. This is the one intentionally
-  staging-derived value; everything CPU-resolvable is locked here.
+- GPU serving stack: pinned by **container image digest** in `configs/models.yaml`
+  (`serving.container_image` = `vllm/vllm-openai@sha256:0a51ea5b…`, resolved via registry
+  metadata 2026-08-17; CUDA 13.0.2, arch list includes sm_90/H100). Staging re-verifies the
+  digest on the H100 with `docker pull` — no staging-derived value remains.
 
 ## What this does NOT verify (GPU-bound, by design)
 

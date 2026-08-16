@@ -50,9 +50,14 @@ hardware:
   nvme_gb_min: 500
 serving:
   # Qwen3 / Llama endpoints: vLLM pinned to 0.27.1 (PyPI release, Aug 2026).
-  # Container: vllm/vllm-openai:v0.27.1 (digest recorded at Day-0 pull; tag is immutable).
+  # Container pinned by DIGEST (resolved Day 0 via registry metadata, 2026-08-17;
+  # re-verified at staging with `docker pull vllm/vllm-openai@sha256:0a51…`):
+  #   vllm/vllm-openai:v0.27.1 — image built 2026-08-11, vLLM build commit
+  #   6e448d0ea9bf3d88d898b65449ca6dc2aec170ac, CUDA 13.0.2,
+  #   TORCH_CUDA_ARCH_LIST includes 9.0 (H100 sm_90 supported).
   engine: vllm
   vllm_version: "0.27.1"
+  container_image: "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
   prefix_caching: required
   gemma_endpoint:
     # P2 GATE (Day-0 blocker, unchanged): Gemma-4 tool-call parsing in vLLM is still reported

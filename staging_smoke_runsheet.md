@@ -26,7 +26,9 @@ seconds/episode, peak memory, and the regenerated **measured** manifest. Nothing
 # 0. environment record (no GPU compute)
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
 python -c "import torch,sys;print('torch',torch.__version__,'cuda',torch.version.cuda)"
-docker inspect --format='{{index .RepoDigests 0}}' <vllm-image>   # container digest -> models.yaml
+docker pull vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+docker inspect --format='{{index .RepoDigests 0}}' vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+# MUST equal configs/models.yaml serving.container_image (pinned Day 0); mismatch -> STOP
 
 # 1. weight staging + per-file hashes (~275GB, network-bound; GPU idle)
 for m in Qwen/Qwen3-32B Qwen/Qwen3-8B RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic google/gemma-4-31B-it; do
@@ -58,7 +60,7 @@ the 6 GPU-h hard cap.
 ## Outputs (all committed, then a new immutable tag)
 
 - `logs/launch_smoke/*.log` (per-model launch + round trip + peak memory + nvidia-smi)
-- `configs/models.yaml` filled: per-file hashes, pinned revisions, container digest, vLLM version
+- `configs/models.yaml` verified: per-file hashes, pinned revisions, container digest re-verified on H100, vLLM version
 - `configs/episodes_pilot.yaml` (from the pinned selector)
 - `logs/measured_rates.json` + regenerated measured manifest
 - After these, a NEW immutable tag (the current `pilot-freeze-v1` is archived, not moved).
