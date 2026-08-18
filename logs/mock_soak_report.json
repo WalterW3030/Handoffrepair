@@ -1,0 +1,38 @@
+{
+  "soak": "mock full-manifest, --mode mock --full",
+  "total_runs": 1180,
+  "pairing_groups": 300,
+  "pairing_violations": 0,
+  "scores": {
+    "1.0": 708,
+    "0.6666666666666666": 236,
+    "0.4": 59,
+    "0.5": 177
+  },
+  "imperfect_runs": 472,
+  "imperfect_families": {
+    "add_reminder_content_and_week_delta_and_time_and_location": 295,
+    "find_days_till_holiday": 177
+  },
+  "imperfect_cause": "RapidAPI network tools (search_location_around_lat_lon, search_holiday, etc.) cannot execute in CPU sandbox (RAPID_API_KEY absent + network-blocked); dry_run detects them by source inspection and skips the call. NOT a harness defect.",
+  "info_sufficiency_S1": {
+    "('B1', 'True'):35": 1,
+    "('B1', 'False'):65": 1,
+    "('B2a', 'False'):68": 1,
+    "('B2a', 'True'):12": 1,
+    "('B3', 'False'):68": 1,
+    "('B3', 'True'):12": 1,
+    "('compiler', 'False'):85": 1,
+    "('compiler', 'True'):15": 1
+  },
+  "policy_fixes_this_round": [
+    "gold milestone trace args for read-only calls",
+    "datetime params from gold ts; lat/lon from SETTING row; str from task text",
+    "timestamp params never 0.0",
+    "network-tool skip by source inspection",
+    "exception path labelled gold_fallback",
+    "info-sufficiency judged on float fields only",
+    "mock_now: frozen per-(episode,seed) clock + deterministic uuid4 for strict pairing"
+  ],
+  "mode": "cpu_mock \u2014 no GPU tokens; scores are policy-determinism checks, not pilot results"
+}

@@ -83,11 +83,11 @@ def _execute_run(run, scenarios, repo, mode):
     scenario = run["episode_id"]
     sp = run["switch_point"]
     switch_turn = None if sp is None else dry_run.probe_switch_turn(
-        scenario, SP_TO_TURN_PROBE[sp], scenarios, repo)
+        scenario, SP_TO_TURN_PROBE[sp], scenarios, repo, seed=run["seed"])
     t0 = time.time()
     rec = dry_run.run_episode(scenario, run["column"].lower(),
                               switch_turn if switch_turn is not None else 0,
-                              repo, scenarios=scenarios)
+                              repo, scenarios=scenarios, seed=run["seed"])
     wall = time.time() - t0
     rec.pop("_ctx", None)
     rec.update({

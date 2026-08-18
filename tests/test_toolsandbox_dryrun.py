@@ -25,7 +25,7 @@ def records():
     import dry_run
     from executor import load_scenarios
     scenarios = load_scenarios(REPO)
-    return {c: dry_run.run_episode(SCENARIO, c, 0, REPO, scenarios=scenarios)
+    return {c: dry_run.run_episode(SCENARIO, c, 0, REPO, scenarios=scenarios, seed=1)
             for c in dry_run.COLUMNS}
 
 

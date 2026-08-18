@@ -2,14 +2,14 @@
   "scenario": "add_reminder_content_and_date_and_time",
   "switch_after_turn": 0,
   "pairing_anchor": "cbdf70ecc05d4ad1b2bb21d93924e52de6cc598a1a50fc050bab49680fa9d4c3",
-  "world_fingerprint": "648f323f48ee4c380e8fcd9f97dbede6c0b865528b6c4cf43f3834ca26615e09",
+  "world_fingerprint": "3a5f31f1a7d87af5e4c63bc813466f1b74b9ebde87b9f8fa063d3f42ce2b1a35",
   "assertions": {
     "A1_prefix_identity": "PASS",
     "A2_world_identity": "PASS"
   },
   "columns": {
     "b0": {
-      "ts": "2026-08-16T17:31:49.831659Z",
+      "ts": "2026-08-18T11:44:33.716857Z",
       "mode": "cpu_mock_toolsandbox",
       "episode_id": "ts_add_reminder_content_and_date_and_time",
       "scenario": "add_reminder_content_and_date_and_time",
@@ -53,14 +53,17 @@
           "logical_op_id": "beba43c6-8411-5e8e-9c68-8235dd17103e",
           "idempotency_key": "a63e3c3d8b8e25ca7a6bdf211344202a2649bee5cf89ecd989ed40ef08a08171",
           "execution": "executed",
-          "result": "01f1160b-0197-45b5-ba89-7c493e79e00a",
+          "result": "00000000-0000-0000-2bbf-6e4300000001",
           "tool_trace": [
-            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"01f1160b-0197-45b5-ba89-7c493e79e00a\"}"
+            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"00000000-0000-0000-2bbf-6e4300000001\"}"
           ],
           "tool_call_exception": null
         }
       ],
       "checks_fired": [],
+      "gate_branch": null,
+      "gate_detail": null,
+      "seed": 0,
       "policy_info_source": [
         "handoff_view"
       ],
@@ -79,7 +82,7 @@
       }
     },
     "b1": {
-      "ts": "2026-08-16T17:31:49.985065Z",
+      "ts": "2026-08-18T11:44:33.886954Z",
       "mode": "cpu_mock_toolsandbox",
       "episode_id": "ts_add_reminder_content_and_date_and_time",
       "scenario": "add_reminder_content_and_date_and_time",
@@ -125,16 +128,32 @@
           "logical_op_id": "beba43c6-8411-5e8e-9c68-8235dd17103e",
           "idempotency_key": "a63e3c3d8b8e25ca7a6bdf211344202a2649bee5cf89ecd989ed40ef08a08171",
           "execution": "executed",
-          "result": "e76830b1-baaf-47c1-a645-c08305995752",
+          "result": "00000000-0000-0000-2bbf-6e4300000001",
           "tool_trace": [
-            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"e76830b1-baaf-47c1-a645-c08305995752\"}"
+            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"00000000-0000-0000-2bbf-6e4300000001\"}"
           ],
           "tool_call_exception": null
         }
       ],
       "checks_fired": [
-        "switch_reached:after_turn_0"
+        "switch_reached:after_turn_0",
+        "gate:resume"
       ],
+      "gate_branch": "resume",
+      "gate_detail": {
+        "checks": {
+          "V1": true,
+          "V2": true,
+          "V3": true,
+          "V4": true,
+          "V5": true
+        },
+        "failed": [],
+        "branch": "resume",
+        "counterfactual_logged": false,
+        "counterfactual": null
+      },
+      "seed": 0,
       "policy_info_source": [
         "handoff_view"
       ],
@@ -153,7 +172,7 @@
       }
     },
     "b2a": {
-      "ts": "2026-08-16T17:31:50.155349Z",
+      "ts": "2026-08-18T11:44:34.067309Z",
       "mode": "cpu_mock_toolsandbox",
       "episode_id": "ts_add_reminder_content_and_date_and_time",
       "scenario": "add_reminder_content_and_date_and_time",
@@ -199,16 +218,32 @@
           "logical_op_id": "beba43c6-8411-5e8e-9c68-8235dd17103e",
           "idempotency_key": "a63e3c3d8b8e25ca7a6bdf211344202a2649bee5cf89ecd989ed40ef08a08171",
           "execution": "executed",
-          "result": "e676e8fe-5501-4697-b727-3083b9317859",
+          "result": "00000000-0000-0000-2bbf-6e4300000001",
           "tool_trace": [
-            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"e676e8fe-5501-4697-b727-3083b9317859\"}"
+            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"00000000-0000-0000-2bbf-6e4300000001\"}"
           ],
           "tool_call_exception": null
         }
       ],
       "checks_fired": [
-        "switch_reached:after_turn_0"
+        "switch_reached:after_turn_0",
+        "gate:resume"
       ],
+      "gate_branch": "resume",
+      "gate_detail": {
+        "checks": {
+          "V1": true,
+          "V2": true,
+          "V3": true,
+          "V4": true,
+          "V5": true
+        },
+        "failed": [],
+        "branch": "resume",
+        "counterfactual_logged": false,
+        "counterfactual": null
+      },
+      "seed": 0,
       "policy_info_source": [
         "gold_fallback"
       ],
@@ -227,7 +262,7 @@
       }
     },
     "b3": {
-      "ts": "2026-08-16T17:31:50.326638Z",
+      "ts": "2026-08-18T11:44:34.242525Z",
       "mode": "cpu_mock_toolsandbox",
       "episode_id": "ts_add_reminder_content_and_date_and_time",
       "scenario": "add_reminder_content_and_date_and_time",
@@ -273,16 +308,32 @@
           "logical_op_id": "beba43c6-8411-5e8e-9c68-8235dd17103e",
           "idempotency_key": "a63e3c3d8b8e25ca7a6bdf211344202a2649bee5cf89ecd989ed40ef08a08171",
           "execution": "executed",
-          "result": "9b2efab1-2922-41ac-916b-b109b8a5db54",
+          "result": "00000000-0000-0000-2bbf-6e4300000001",
           "tool_trace": [
-            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"9b2efab1-2922-41ac-916b-b109b8a5db54\"}"
+            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"00000000-0000-0000-2bbf-6e4300000001\"}"
           ],
           "tool_call_exception": null
         }
       ],
       "checks_fired": [
-        "switch_reached:after_turn_0"
+        "switch_reached:after_turn_0",
+        "gate:resume"
       ],
+      "gate_branch": "resume",
+      "gate_detail": {
+        "checks": {
+          "V1": true,
+          "V2": true,
+          "V3": true,
+          "V4": true,
+          "V5": true
+        },
+        "failed": [],
+        "branch": "resume",
+        "counterfactual_logged": false,
+        "counterfactual": null
+      },
+      "seed": 0,
       "policy_info_source": [
         "gold_fallback"
       ],
@@ -301,7 +352,7 @@
       }
     },
     "compiler": {
-      "ts": "2026-08-16T17:31:50.489407Z",
+      "ts": "2026-08-18T11:44:34.412689Z",
       "mode": "cpu_mock_toolsandbox",
       "episode_id": "ts_add_reminder_content_and_date_and_time",
       "scenario": "add_reminder_content_and_date_and_time",
@@ -347,16 +398,32 @@
           "logical_op_id": "beba43c6-8411-5e8e-9c68-8235dd17103e",
           "idempotency_key": "a63e3c3d8b8e25ca7a6bdf211344202a2649bee5cf89ecd989ed40ef08a08171",
           "execution": "executed",
-          "result": "774fe7a7-1dc2-4d06-82ea-cb9309508332",
+          "result": "00000000-0000-0000-2bbf-6e4300000001",
           "tool_trace": [
-            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"774fe7a7-1dc2-4d06-82ea-cb9309508332\"}"
+            "{\"tool_name\": \"add_reminder\", \"arguments\": {\"content\": \"Buy chocolate milk\", \"reminder_timestamp\": 1711098000.0, \"latitude\": null, \"longitude\": null}, \"result\": \"00000000-0000-0000-2bbf-6e4300000001\"}"
           ],
           "tool_call_exception": null
         }
       ],
       "checks_fired": [
-        "switch_reached:after_turn_0"
+        "switch_reached:after_turn_0",
+        "gate:resume"
       ],
+      "gate_branch": "resume",
+      "gate_detail": {
+        "checks": {
+          "V1": true,
+          "V2": true,
+          "V3": true,
+          "V4": true,
+          "V5": true
+        },
+        "failed": [],
+        "branch": "resume",
+        "counterfactual_logged": false,
+        "counterfactual": null
+      },
+      "seed": 0,
       "policy_info_source": [
         "gold_fallback"
       ],

@@ -27,7 +27,60 @@ CLI:  python3 src/toolsandbox/dry_run.py --repo /path/to/ToolSandbox \
           --scenario add_reminder_content_and_date_and_time --out logs/toolsandbox_dry_run.json
 """
 import argparse, datetime, json, os, re, sys
+import numpy as np
 from types import SimpleNamespace
+
+# Strict pairing requires a deterministic per-(episode, seed) clock: wall-clock-derived
+# tool results (get_current_timestamp, creation_timestamp) differ across columns within
+# one episode group and break prefix_ids equality. mock_now() freezes time per cell.
+_MOCK_EPOCH = 1780000000.0
+
+class mock_now:
+    """Context manager: freeze the wall clock for one run cell so strict pairing holds.
+    ToolSandbox tools read datetime.datetime.now() (utilities) and datetime.now()
+    (reminder); both derive from the same module. We patch datetime.datetime.now to a
+    fixed per-(episode, seed) instant inside the tool modules that use it."""
+    def __init__(self, episode_id, seed):
+        import zlib
+        self.t = _MOCK_EPOCH + (zlib.crc32(f"{episode_id}::{seed}".encode()) % 10000) * 60.0
+    def __enter__(self):
+        import datetime as _dt
+        t = self.t
+        class _FrozenDT(_dt.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls.fromtimestamp(t, tz)
+        self._orig = _dt.datetime
+        _dt.datetime = _FrozenDT
+        # modules that imported `datetime` as a module see the patch automatically;
+        # modules that did `from datetime import datetime` need direct patching
+        self._patched = []
+        for modname in ("tool_sandbox.tools.utilities", "tool_sandbox.tools.reminder"):
+            try:
+                mod = __import__(modname, fromlist=["x"])
+                if getattr(mod, "datetime", None) is not None and hasattr(mod.datetime, "now") \
+                        and not isinstance(mod.datetime, type(_dt)):
+                    self._patched.append((mod, "datetime", mod.datetime))
+                    mod.datetime = _FrozenDT
+                # server-generated ids (reminder uuid4) also break pairing across columns
+                if getattr(mod, "uuid4", None) is not None:
+                    import zlib as _z, uuid as _u
+                    ctr = {"n": 0}
+                    base = _z.crc32(f"{self.t}".encode())
+                    def _det_uuid4(_ctr=ctr, _base=base):
+                        _ctr["n"] += 1
+                        return _u.UUID(int=(_base << 32) + _ctr["n"])
+                    self._patched.append((mod, "uuid4", mod.uuid4))
+                    mod.uuid4 = _det_uuid4
+            except Exception:
+                pass
+        return self
+    def __exit__(self, *a):
+        import datetime as _dt
+        _dt.datetime = self._orig
+        for mod, attr, orig in self._patched:
+            setattr(mod, attr, orig)
+        return False
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "columns"))
@@ -71,6 +124,23 @@ def _traced_tools(scenario):
     return names
 
 
+def _gold_trace_args(scenario):
+    """Gold arguments carried by the tool_trace milestones themselves, first non-empty
+    per tool (oracle script data — deterministic, no LLM)."""
+    gold = {}
+    for ms in scenario.evaluation.milestone_matcher.milestones:
+        for c in ms.snapshot_constraints:
+            tdf = c.target_dataframe
+            if tdf is None or "tool_trace" not in tdf.columns:
+                continue
+            for v in tdf["tool_trace"].to_list():
+                for tr in (json.loads(v) if v.strip().startswith("[") else [json.loads(v)]):
+                    n, a = tr.get("tool_name"), tr.get("arguments") or {}
+                    if n and a and n not in gold:
+                        gold[n] = {k: v for k, v in a.items() if v is not None}
+    return gold
+
+
 def make_policy(scenario, world_impl, episode_state):
     """Build a deterministic scripted policy for ANY kept scenario.
 
@@ -81,8 +151,18 @@ def make_policy(scenario, world_impl, episode_state):
     """
     additions = _db_addition_targets(scenario)
     traced = _traced_tools(scenario)
+    gold_args = _gold_trace_args(scenario)
+    # network-backed tools (RapidAPI) cannot execute in the CPU sandbox — detect by
+    # source inspection and skip them (scenario will score < 1.0; honest, recorded)
+    import inspect as _i0
+    def _networked(tool):
+        try:
+            return "rapid_api_get_request(" in _i0.getsource(scenario_tool(scenario, tool))
+        except (OSError, TypeError):
+            return False
     traced_readonly = [t for t in traced
-                       if t in world_impl and not world_impl[t]["side_effect"]]
+                       if t in world_impl and not world_impl[t]["side_effect"]
+                       and not _networked(t)]
     # a gold timestamp from any addition row lets us emit VALID datetime-component args
     import datetime as _dt
     gold_ts = next((v for _, rows in additions for row in rows for v in row.values()
@@ -90,14 +170,41 @@ def make_policy(scenario, world_impl, episode_state):
     gold_dt = _dt.datetime.fromtimestamp(gold_ts) if gold_ts else None
 
     def _fill_args(tool):
+        """Args for a read-only trace call: gold milestone args first; remaining required
+        params filled — datetime components from the gold timestamp, floats from the
+        scenario's SETTING row (valid coordinates), str from the task message."""
         import inspect as _i
         params = _i.signature(scenario_tool(scenario, tool)).parameters
-        args = {}
+        args = dict(gold_args.get(tool, {}))
+        task_text = ""
+        for k, v in args.items():
+            if k in params:
+                params = {p: prm for p, prm in params.items() if p != k}
+        import tool_sandbox.common.execution_context as _ec
+        sb = scenario.starting_context.get_database(_ec.DatabaseNamespace.SANDBOX)
+        users = [r for r in sb.to_dicts() if r["sender"] == "USER" and r["recipient"] == "AGENT"]
+        if users:
+            task_text = users[-1]["content"]
+        try:
+            setting = scenario.starting_context.get_database(_ec.DatabaseNamespace.SETTING).to_dicts()[0]
+        except Exception:
+            setting = {}
         for p, prm in params.items():
             if prm.default is not _i.Parameter.empty:
                 continue
             if gold_dt and p in ("year", "month", "day", "hour", "minute", "second"):
                 args[p] = getattr(gold_dt, p)
+            elif p == "latitude" and setting.get("latitude") is not None:
+                args[p] = setting["latitude"]
+            elif p == "longitude" and setting.get("longitude") is not None:
+                args[p] = setting["longitude"]
+            elif "str" in str(prm.annotation):
+                args[p] = task_text or ""
+            elif "timestamp" in p or "time" in p:
+                # timestamp-typed params: never emit 0.0 (outside the valid range);
+                # use a plausible current timestamp so the call executes
+                import time as _t
+                args[p] = float(int(_t.time()))
             else:
                 args[p] = _default_for(prm.annotation)
         return args
@@ -119,8 +226,19 @@ def make_policy(scenario, world_impl, episode_state):
                 continue
             row = {k: v for k, v in rows[0].items()}
             view_text = prefix_cache.canonical(view).lower()
-            visible = all(str(v).lower() in view_text
-                          for v in row.values() if v is not None)
+            # info-sufficiency is judged on values the model could ONLY know from the
+            # trajectory/handoff: floats (resolved timestamps, coordinates). String fields
+            # like content come from the user's task text (always in view via messages[1]),
+            # so they never discriminate columns — excluded from the sufficiency test.
+            def _vis(v):
+                if v is None:
+                    return True
+                if isinstance(v, float):
+                    # floats surface in tool results as "1711098000.0" but in typed/compiled
+                    # payloads as "1711098000" — accept both spellings
+                    return str(v).lower() in view_text or str(int(v)) in view_text
+                return True
+            visible = all(_vis(v) for v in row.values())
             episode_state["info_source"].append(
                 "handoff_view" if visible else "gold_fallback")
             return _emit(tool, row)
@@ -182,10 +300,17 @@ def _initial_transcript(ctx_mod, base_role):
 
 
 def run_episode(scenario_name, column, switch_after_turn, repo_path, max_turns=6,
-                scenarios=None):
+                scenarios=None, seed=0):
     """Run one column of one scenario. Returns the run record (same shape as runner.run)."""
     if column not in COLUMNS:
         raise ValueError(column)
+    with mock_now(scenario_name, seed):
+        return _run_episode_inner(scenario_name, column, switch_after_turn, repo_path,
+                                  max_turns, scenarios, seed)
+
+
+def _run_episode_inner(scenario_name, column, switch_after_turn, repo_path, max_turns,
+                       scenarios, seed):
     scenario, world_impl, make_context = load_world(scenario_name, repo_path,
                                                     scenarios=scenarios)
     ctx = make_context()
@@ -239,6 +364,10 @@ def run_episode(scenario_name, column, switch_after_turn, repo_path, max_turns=6
             step["result"] = resp.content
             step["tool_trace"] = resp.tool_trace
             step["tool_call_exception"] = resp.tool_call_exception
+            if resp.tool_call_exception:
+                # the value was needed but not derivable from the view → the scripted
+                # policy hit a dead end (honest: counts as gold_fallback territory)
+                episode_state["info_source"].append("gold_fallback")
             messages.append({"role": "assistant", "content": code})
             messages.append({"role": "tool", "content": resp.content or ""})
         ledger.record(oid, key, step["execution"], step["result"])
@@ -272,7 +401,7 @@ def run_episode(scenario_name, column, switch_after_turn, repo_path, max_turns=6
         "checks_fired": checks_fired,
         "gate_branch": gate_branch,
         "gate_detail": gate_detail,
-        "seed": 0,
+        "seed": seed,
         # did the column's handoff representation carry the values the target needed?
         # (B0 has no handoff -> None; handoff columns: did any post-switch action need
         #  oracle fallback because the value was absent from the target's view?)
@@ -334,17 +463,18 @@ def _apply_handoff(column, messages, steps):
 _PROBE_CACHE = {}
 
 
-def probe_switch_turn(scenario_name, kind, scenarios, repo):
+def probe_switch_turn(scenario_name, kind, scenarios, repo, seed=0):
     """Derive the switch turn index for S1/S2/S3 by probing the scenario once.
 
     S1 first_tool:       after turn 0 (first tool call of any kind)
     S2 first_side_effect: after the first step whose tool mutates the world (decisive)
     S3 half:             after >= half of the scripted tool calls have executed
     """
-    if scenario_name not in _PROBE_CACHE:
-        rec = run_episode(scenario_name, "b0", 0, repo, scenarios=scenarios)
-        _PROBE_CACHE[scenario_name] = rec["steps"]
-    steps = _PROBE_CACHE[scenario_name]
+    key = (scenario_name, seed)
+    if key not in _PROBE_CACHE:
+        rec = run_episode(scenario_name, "b0", 0, repo, scenarios=scenarios, seed=seed)
+        _PROBE_CACHE[key] = rec["steps"]
+    steps = _PROBE_CACHE[key]
     if kind == "first_tool":
         return 0
     if kind == "first_side_effect":
