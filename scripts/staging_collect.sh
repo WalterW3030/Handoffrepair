@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 # staging_collect.sh — run the approved M1 staging (run sheet §0-§3) and pack
 # all evidence into one tarball to upload back for verification.
-# Auto-STOPs (exit 1) on: container digest mismatch, weight hash mismatch,
-# server crash, or health timeout. Run from the repo root after setup_machine.sh.
+# Auto-STOPs (exit 1) on: container digest mismatch, CUDA/driver mismatch,
+# weight hash mismatch, server crash, or health timeout.
+# Rules: R2 no sudo · R3 exactly 1 GPU (--gpus '"device=0"' + CUDA_VISIBLE_DEVICES=0).
+# Run from the repo root after setup_machine.sh.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# shellcheck disable=SC1091
+[ -f env.sh ] && source env.sh
+export CUDA_VISIBLE_DEVICES=0   # Rule R3
 
 IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 EXPECT_DIGEST="sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
+HF_HOME="${HF_HOME:-/ephemeral/$USER/hf}"
 
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 EV="staging_evidence/$STAMP"
@@ -16,30 +22,35 @@ echo "evidence dir: $EV"
 
 stop () { echo "STOP: $1" | tee -a "$EV/STOP.txt"; exit 1; }
 
-echo "== [0/4] environment record =="
+echo "== [0/5] environment record =="
 {
   date -u; uname -a
-  nvidia-smi || stop "nvidia-smi failed — driver not working"
-  docker version || stop "docker not working (install docker + nvidia-container-toolkit)"
-  docker info 2>/dev/null | grep -i runtime
-  python3 --version; df -h .; free -g
-  echo "RAPID_API_KEY set: ${RAPID_API_KEY:+yes}${RAPID_API_KEY:-NO (needed later for main run, not for staging)}"
-} > "$EV/env.txt" 2>&1 || stop "environment record failed"
+  nvidia-smi || echo "nvidia-smi FAILED — driver not working"
+  python3 --version; df -h . /ephemeral 2>/dev/null; free -g
+  docker info --format 'DockerRootDir={{.DockerRootDir}}' 2>/dev/null || echo "docker info failed (are you in the docker group? no sudo per R2)"
+  echo "HF_HOME=$HF_HOME"
+  echo "RAPID_API_KEY set: ${RAPID_API_KEY:+yes}${RAPID_API_KEY:-NO (needed for main run, not staging)}"
+} > "$EV/env.txt" 2>&1
 cat "$EV/env.txt"
 
-echo "== [1/4] pull pinned vLLM image and verify digest =="
+echo "== [1/5] pull pinned vLLM image and verify digest =="
 docker pull "$IMAGE" | tee "$EV/docker_pull.log" || stop "docker pull failed"
 ACTUAL=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" | sed 's/.*@//')
-echo "expected=$EXPECT_DIGEST"
-echo "actual=$ACTUAL"
 { echo "expected=$EXPECT_DIGEST"; echo "actual=$ACTUAL"; } | tee "$EV/digest_check.txt"
 [ "$ACTUAL" = "$EXPECT_DIGEST" ] || stop "container digest mismatch"
 
-echo "== [2/4] verify weights against configs/weight_sha256.lock =="
-python3 tools/hash_weights.py --out "$EV/weight_hash_verify.yaml" \
+echo "== [2/5] CUDA compat probe: nvidia-smi INSIDE the container (1 GPU) =="
+# Driver is 570.195.03 (CUDA 12.8); image user-space is CUDA 13.0.2 — must verify
+# the container actually sees the GPU before any weight download/launch.
+docker run --rm --gpus '"device=0"' "$IMAGE" nvidia-smi \
+  | tee "$EV/container_nvidia_smi.txt" \
+  || stop "CUDA/driver mismatch — container cannot see GPU. Report back; options: cuda-compat or re-pin image (lock change)."
+
+echo "== [3/5] verify weights against configs/weight_sha256.lock =="
+python3 tools/hash_weights.py --root "$HF_HOME" --out "$EV/weight_hash_verify.yaml" \
   || stop "weight hash verification failed — do NOT proceed, see $EV/weight_hash_verify.yaml"
 
-echo "== [3/4] per-model launch smoke + peak memory + probes =="
+echo "== [4/5] per-model launch smoke + peak memory + probes (1 GPU each) =="
 KEYS=(qwen3-32b qwen3-8b llama33-70b-fp8 gemma4-31b)
 declare -A MODELS=(
   [qwen3-32b]="Qwen/Qwen3-32B"
@@ -51,10 +62,11 @@ PORT=18080
 : > "$EV/peak_memory.txt"
 for key in "${KEYS[@]}"; do
   model="${MODELS[$key]}"
-  echo "--- $key ($model) on port $PORT"
-  docker run -d --rm --name "staging_$key" --gpus all \
-    -v "$HOME/.cache/huggingface:/root/.cache/huggingface" \
+  echo "--- $key ($model) on port $PORT, GPU 0 only"
+  docker run -d --rm --name "staging_$key" --gpus '"device=0"' \
+    -v "$HF_HOME:/root/.cache/huggingface" \
     -p "$PORT:8000" \
+    -e CUDA_VISIBLE_DEVICES=0 \
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
     --model "$model" --served-model-name "$key" \
@@ -68,7 +80,7 @@ for key in "${KEYS[@]}"; do
       docker logs "staging_$key" > "$EV/serve_${key}.log" 2>&1 || true
       stop "server died for $key — see $EV/serve_${key}.log"
     fi
-    mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | sort -n | tail -1)
+    mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
     [ "$mem" -gt "$peak" ] && peak=$mem
     if curl -sf "http://localhost:$PORT/health" > /dev/null 2>&1; then ready=1; break; fi
   done
@@ -92,14 +104,14 @@ for key in "${KEYS[@]}"; do
   fi
 
   sleep 5
-  mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | sort -n | tail -1)
+  mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
   [ "$mem" -gt "$peak" ] && peak=$mem
   echo "$key peak_mib=$peak" | tee -a "$EV/peak_memory.txt"
   docker stop "staging_$key" > /dev/null
   PORT=$((PORT+1))
 done
 
-echo "== [4/4] bundle =="
+echo "== [5/5] bundle =="
 BUNDLE="staging_evidence_$STAMP.tar.gz"
 tar czf "$BUNDLE" -C staging_evidence "$STAMP"
 echo
