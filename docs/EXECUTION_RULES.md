@@ -1,6 +1,6 @@
 # Execution Rules (always-on)
 
-Binding on every execution step of the HandoffRepair pilot, in this sandbox and on the GPU machine. Set by the user 2026-08-20. Companion file: `Machine Properties.md`.
+Binding on every execution step of the HandoffRepair pilot, in this sandbox and on the GPU machine. R1–R3 set by the user 2026-08-20; R4 added 2026-08-20 (same instruction). Companion file: `Machine Properties.md`.
 
 ## R1 — Property awareness
 - Always be aware of the recorded machine properties (driver, CUDA, disks, versions) and of every package/model/container version pinned in the repo.
@@ -15,6 +15,10 @@ Binding on every execution step of the HandoffRepair pilot, in this sandbox and 
 - All commands, scripts, and configs use exactly one GPU: `CUDA_VISIBLE_DEVICES=0` and/or `docker run --gpus '"device=0"'`.
 - No tensor/pipeline parallelism, no multi-GPU flags (`--tensor-parallel-size` stays 1, vLLM default), no code that enumerates or splits across GPUs.
 - Memory sizing must fit one GPU; if a model does not fit one GPU, that's a STOP, not a reason to span GPUs.
+
+## R4 — Always a virtual environment
+- All Python execution (setup, staging, dry-run, main run, analysis) happens inside the project venv (`<repo>/.venv`), never against the system Python and never with `--user` installs.
+- Scripts must either activate the venv or call `.venv/bin/python` explicitly; a missing venv is a setup error, not a reason to fall back to system Python.
 
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).

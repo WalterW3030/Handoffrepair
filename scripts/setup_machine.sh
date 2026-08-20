@@ -43,15 +43,30 @@ git -C ToolSandbox fetch --all --quiet
 git -C ToolSandbox checkout "$TS_COMMIT"
 git -C ToolSandbox rev-parse HEAD | tee toolsandbox_commit.txt
 
-echo "== [3/5] host python deps (pinned) =="
+echo "== [3/5] host python deps (pinned; full list + rationale in docs/ENVIRONMENT.md) =="
 pip install \
   openai==1.17.0 \
   pydantic==2.7.4 \
   pydantic-core==2.18.2 \
   polars==0.20.31 \
   phonenumbers pycountry geopy geographiclib holidays pint \
-  tqdm pyyaml \
-  "huggingface_hub[cli]"
+  flexcache flexparser absl-py distro \
+  numpy tqdm pyyaml \
+  "huggingface_hub[cli]" \
+  pytest==9.1.1
+
+echo "== [3b/5] import smoke test (fails loudly if anything is missing) =="
+python - <<'EOF'
+import tool_sandbox  # via PYTHONPATH, pinned commit
+import polars, pydantic, openai, numpy, yaml, tqdm
+import phonenumbers, pycountry, geopy, geographiclib, holidays, pint
+import absl, distro, flexcache, flexparser
+assert polars.__version__ == "0.20.31", polars.__version__
+assert pydantic.__version__ == "2.7.4", pydantic.__version__
+assert openai.__version__ == "1.17.0", openai.__version__
+print("IMPORT_SMOKE_OK")
+EOF
+pip freeze | tee env_freeze.txt
 
 cat > env.sh <<EOF
 # source this before any pilot command

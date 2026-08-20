@@ -10,6 +10,8 @@ cd "$(dirname "$0")/.."
 # shellcheck disable=SC1091
 [ -f env.sh ] && source env.sh
 export CUDA_VISIBLE_DEVICES=0   # Rule R3
+PY=.venv/bin/python             # Rule R4: venv only
+[ -x "$PY" ] || { echo "venv missing — run scripts/setup_machine.sh first"; exit 1; }
 
 IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 EXPECT_DIGEST="sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
@@ -26,7 +28,7 @@ echo "== [0/5] environment record =="
 {
   date -u; uname -a
   nvidia-smi || echo "nvidia-smi FAILED — driver not working"
-  python3 --version; df -h . /ephemeral 2>/dev/null; free -g
+  python3 --version; .venv/bin/python --version 2>/dev/null; df -h . /ephemeral 2>/dev/null; free -g
   docker info --format 'DockerRootDir={{.DockerRootDir}}' 2>/dev/null || echo "docker info failed (are you in the docker group? no sudo per R2)"
   echo "HF_HOME=$HF_HOME"
   echo "RAPID_API_KEY set: ${RAPID_API_KEY:+yes}${RAPID_API_KEY:-NO (needed for main run, not staging)}"
@@ -47,7 +49,7 @@ docker run --rm --gpus '"device=0"' "$IMAGE" nvidia-smi \
   || stop "CUDA/driver mismatch — container cannot see GPU. Report back; options: cuda-compat or re-pin image (lock change)."
 
 echo "== [3/5] verify weights against configs/weight_sha256.lock =="
-python3 tools/hash_weights.py --root "$HF_HOME" --out "$EV/weight_hash_verify.yaml" \
+"$PY" tools/hash_weights.py --root "$HF_HOME" --out "$EV/weight_hash_verify.yaml" \
   || stop "weight hash verification failed — do NOT proceed, see $EV/weight_hash_verify.yaml"
 
 echo "== [4/5] per-model launch smoke + peak memory + probes (1 GPU each) =="
