@@ -4,10 +4,10 @@
 ## 1. Python version
 | Where | Version | Basis |
 |---|---|---|
-| venv on GPU machine | **≥3.10 required; recommend 3.11 or 3.12** | ToolSandbox requires 3.10+ **[verify on machine: `grep python_requires ToolSandbox/setup.py`]**; all pilot code verified on **3.12** (sandbox) |
-| Host system python | unknown — **open check #6** (`python3 --version`) | used only to create the venv |
+| pilot env on GPU machine | **3.10, 3.11, or 3.12 — NOT 3.13+** | polars==0.20.31 ships one abi3 wheel (cp38-abi3, works ≤3.12); pydantic-core==2.18.2 wheels stop at cp312 (both verified on PyPI 2026-08-20). Conda's default python is often 3.13 → use `conda create -n handoffrepair python=3.12` |
+| Host system python | unknown — **open check #6** (`python3 --version`) | used only to create the env |
 
-Rule R4: everything runs inside `<repo>/.venv`; scripts call `.venv/bin/python` explicitly.
+Rule R4: everything runs inside an isolated env — **either** the project venv (`<repo>/.venv`) **or** a dedicated conda env (user's machine uses conda); `setup_machine.sh` auto-detects and records the interpreter in `env.sh` (`PILOT_PYTHON`).
 
 ## 2. Required packages (venv)
 
@@ -40,11 +40,14 @@ Rule R4: everything runs inside `<repo>/.venv`; scripts call `.venv/bin/python` 
 - API-client SDKs for anthropic/cohere/mistral etc. that ToolSandbox's `pip install -e .` would pull — the pilot never uses those roles (`INTEGRATION.md`); we install via PYTHONPATH + the explicit list above instead, which is smaller and was verified sufficient by the real dry-run.
 
 ## 3. Install commands (what `scripts/setup_machine.sh` already runs — shown for transparency)
+
+**Conda path (user's machine):**
 ```bash
 cd /ephemeral/$USER/handoffrepair-pilot
-python3 -m venv .venv && source .venv/bin/activate   # R4
-pip install --upgrade pip
-pip install \
+conda create -n handoffrepair python=3.12 -y    # NOT 3.13 — see §1
+conda activate handoffrepair
+python -m pip install --upgrade pip
+python -m pip install \
   openai==1.17.0 pydantic==2.7.4 pydantic-core==2.18.2 polars==0.20.31 \
   phonenumbers pycountry geopy geographiclib holidays pint \
   flexcache flexparser absl-py distro \
@@ -52,7 +55,17 @@ pip install \
 export TOOLSANDBOX_REPO="$(pwd)/ToolSandbox"
 export PYTHONPATH="$(pwd)/ToolSandbox:${PYTHONPATH:-}"
 ```
+(venv path is identical except `python3 -m venv .venv && source .venv/bin/activate` replaces the conda lines. **Do not mix**: with conda active, use `python -m pip`, never a bare `pip` that might belong to another env.)
 Followed automatically by the import smoke test (fails loudly if anything is missing) and `pip freeze > env_freeze.txt` (goes into the staging evidence bundle).
+
+## 3b. Troubleshooting (from user report 2026-08-20)
+- **`ssh-keygen … -N ""` → "option requires an argument -- N":** the empty passphrase argument was lost in copy-paste (markdown may render curly quotes). Type it manually with straight ASCII quotes, or simplest: **omit `-N` entirely and press Enter twice** at the passphrase prompts:
+  ```bash
+  ssh-keygen -t ed25519 -f ~/.ssh/handoffrepair_deploy
+  # Enter passphrase (empty for no passphrase):  <Enter>
+  # Enter same passphrase again:                 <Enter>
+  ```
+- **`pip install` fails in conda:** most likely the conda env is Python **3.13** — the pinned wheels stop at 3.12 (§1). Check `python --version`; if 3.13, recreate with `python=3.12` as above. If it still fails on 3.12, paste the full error output here — do not improvise around it.
 
 ## 4. Providing secrets — RAPID_API_KEY and GitHub access
 

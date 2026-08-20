@@ -29,11 +29,25 @@ if [ "$ROOTDIR" != UNKNOWN ]; then
     echo "WARNING: <40G free for docker images. No-sudo fix: rootless docker with XDG_DATA_HOME on /ephemeral, or ask admin to relocate."
 fi
 
-echo "== [1/5] python venv =="
-python3 -m venv .venv
-# shellcheck disable=SC1091
-source .venv/bin/activate
-pip install --upgrade pip
+echo "== [1/5] python env (Rule R4: conda env OR project venv, python 3.10-3.12) =="
+if [ -n "${CONDA_PREFIX:-}" ]; then
+  echo "conda env detected: $CONDA_PREFIX ($(python --version 2>&1)) — using it, skipping venv creation"
+  PYBIN="$(which python)"
+else
+  echo "no conda env active — creating project venv .venv"
+  python3 -m venv .venv
+  # shellcheck disable=SC1091
+  source .venv/bin/activate
+  PYBIN=.venv/bin/python
+fi
+PYVER=$("$PYBIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+case "$PYVER" in
+  3.10|3.11|3.12) ;;
+  *) echo "STOP: python $PYVER — pinned deps have prebuilt wheels only for 3.10-3.12.
+       conda fix:  conda create -n handoffrepair python=3.12 -y && conda activate handoffrepair"; exit 1;;
+esac
+"$PYBIN" -m pip install --upgrade pip
+echo "python env: $PYBIN ($PYVER)" | tee python_env.txt
 
 echo "== [2/5] ToolSandbox @ pinned commit =="
 if [ ! -d ToolSandbox ]; then
@@ -44,7 +58,7 @@ git -C ToolSandbox checkout "$TS_COMMIT"
 git -C ToolSandbox rev-parse HEAD | tee toolsandbox_commit.txt
 
 echo "== [3/5] host python deps (pinned; full list + rationale in docs/ENVIRONMENT.md) =="
-pip install \
+"$PYBIN" -m pip install \
   openai==1.17.0 \
   pydantic==2.7.4 \
   pydantic-core==2.18.2 \
@@ -56,7 +70,7 @@ pip install \
   pytest==9.1.1
 
 echo "== [3b/5] import smoke test (fails loudly if anything is missing) =="
-python - <<'EOF'
+"$PYBIN" - <<'EOF'
 import tool_sandbox  # via PYTHONPATH, pinned commit
 import polars, pydantic, openai, numpy, yaml, tqdm
 import phonenumbers, pycountry, geopy, geographiclib, holidays, pint
@@ -66,7 +80,7 @@ assert pydantic.__version__ == "2.7.4", pydantic.__version__
 assert openai.__version__ == "1.17.0", openai.__version__
 print("IMPORT_SMOKE_OK")
 EOF
-pip freeze | tee env_freeze.txt
+"$PYBIN" -m pip freeze | tee env_freeze.txt
 
 cat > env.sh <<EOF
 # source this before any pilot command
@@ -74,6 +88,7 @@ export TOOLSANDBOX_REPO="\$(pwd)/ToolSandbox"
 export PYTHONPATH="\$(pwd)/ToolSandbox:\${PYTHONPATH:-}"
 export HF_HOME="$HF_HOME"
 export CUDA_VISIBLE_DEVICES=0   # Rule R3: exactly 1 GPU, always
+export PILOT_PYTHON="$PYBIN"    # Rule R4: this interpreter only
 EOF
 # shellcheck disable=SC1091
 source env.sh
@@ -91,7 +106,7 @@ dl "RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic"   f50dbad2c84590ca17dc51e207c34
 dl "google/gemma-4-31B-it"                         842da3794eaa0b77d5f08bae87a17459d91ff475
 
 echo "== [5/5] verify all 39 weight files against lock =="
-python tools/hash_weights.py --root "$HF_HOME" --out weight_hash_verify.yaml
+"$PYBIN" tools/hash_weights.py --root "$HF_HOME" --out weight_hash_verify.yaml
 
 echo
 echo "SETUP OK. Next: bash scripts/staging_collect.sh"

@@ -10,8 +10,12 @@ cd "$(dirname "$0")/.."
 # shellcheck disable=SC1091
 [ -f env.sh ] && source env.sh
 export CUDA_VISIBLE_DEVICES=0   # Rule R3
-PY=.venv/bin/python             # Rule R4: venv only
-[ -x "$PY" ] || { echo "venv missing — run scripts/setup_machine.sh first"; exit 1; }
+PY="${PILOT_PYTHON:-}"          # Rule R4: interpreter chosen by setup (conda env or .venv)
+if [ -z "$PY" ]; then
+  if [ -n "${CONDA_PREFIX:-}" ]; then PY="$(which python)"
+  elif [ -x .venv/bin/python ]; then PY=.venv/bin/python
+  else echo "no pilot python env — run scripts/setup_machine.sh first"; exit 1; fi
+fi
 
 IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 EXPECT_DIGEST="sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
@@ -28,7 +32,7 @@ echo "== [0/5] environment record =="
 {
   date -u; uname -a
   nvidia-smi || echo "nvidia-smi FAILED — driver not working"
-  python3 --version; .venv/bin/python --version 2>/dev/null; df -h . /ephemeral 2>/dev/null; free -g
+  python3 --version; "$PY" --version; df -h . /ephemeral 2>/dev/null; free -g
   docker info --format 'DockerRootDir={{.DockerRootDir}}' 2>/dev/null || echo "docker info failed (are you in the docker group? no sudo per R2)"
   echo "HF_HOME=$HF_HOME"
   echo "RAPID_API_KEY set: ${RAPID_API_KEY:+yes}${RAPID_API_KEY:-NO (needed for main run, not staging)}"

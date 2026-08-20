@@ -17,8 +17,10 @@ Binding on every execution step of the HandoffRepair pilot, in this sandbox and 
 - Memory sizing must fit one GPU; if a model does not fit one GPU, that's a STOP, not a reason to span GPUs.
 
 ## R4 — Always a virtual environment
-- All Python execution (setup, staging, dry-run, main run, analysis) happens inside the project venv (`<repo>/.venv`), never against the system Python and never with `--user` installs.
-- Scripts must either activate the venv or call `.venv/bin/python` explicitly; a missing venv is a setup error, not a reason to fall back to system Python.
+- All Python execution (setup, staging, dry-run, main run, analysis) happens inside an isolated environment, never against the system Python and never with `--user` installs.
+- Accepted forms: the project venv (`<repo>/.venv`) **or a dedicated conda env** (user's machine uses conda) — one or the other, never both at once, and scripts must detect which is active.
+- Scripts must either activate the env or call its interpreter explicitly; a missing env is a setup error, not a reason to fall back to system Python.
+- The env's Python must be **3.10–3.12** (3.13 has no prebuilt wheels for some pinned deps → conda users: `conda create -n handoffrepair python=3.12`).
 
 ## R5 — Safe commands only
 - Use only commands whose effect is confined to the experiment's own workspace (the repo dir, its venv, its evidence/log dirs, the HF cache on `/ephemeral` created by setup).
