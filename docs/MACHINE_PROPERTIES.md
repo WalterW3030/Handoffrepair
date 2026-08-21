@@ -81,8 +81,10 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 | 1 | 2026-08-20 | `sudo mkdir -p /ephemeral/hr` | No user-writable dir on the only big disk; no no-sudo alternative | user |
 | 2 | 2026-08-20 | `sudo chown ubuntu:ubuntu /ephemeral/hr` | Make /ephemeral/hr writable by user | user |
 | 3 | 2026-08-20 | `sudo mkdir/tee /etc/docker/daemon.json` + `sudo systemctl restart docker` | Relocate system-docker storage to /ephemeral/hr/docker-data (root / too small) | user |
+| 4 | (only if rootless chosen) | `sudo apt install uidmap` | Rootless docker needs setuid `newuidmap`/`newgidmap` (confirmed missing 2026-08-21); no no-sudo alternative | user |
 
 ## 4. Change log
+- 2026-08-21 — rootless docker root cause: `newuidmap`/`newgidmap` missing (uidmap pkg); subuid/subgid/userns/XDG_RUNTIME_DIR all OK. System-docker path is primary (works, storage on /ephemeral).
 - 2026-08-20 — docker mode: user has docker group → SYSTEM docker is the default (no sudo for docker cmds); storage relocated to /ephemeral/hr/docker-data via one reported sudo edit. env.sh/staging now support DOCKER_MODE=system|rootless (default system). Rootless remains the no-sudo fallback.
 - 2026-08-20 — rootless docker daemon must be started persistently (setsid, survives shell exit) and DOCKER_HOST exported in every shell; added daemon-reachable pre-flight to staging_collect.sh + DOCKER_HOST to env.sh. (Error: docker.sock no such file = daemon not running.)
 - 2026-08-20 — HF_HOME stale-override bug: old env.sh/shell had HF_HOME=/ephemeral/hf (root-owned, from pre-PILOT_DATA runs) → PermissionError on weight download. Scripts now force HF_HOME under PILOT_DATA with a warning when ignoring a stale value.
