@@ -21,7 +21,13 @@ IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8f
 EXPECT_DIGEST="sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 # HF_HOME comes from env.sh (written by setup_machine.sh from PILOT_DATA — a user-writable
 # dir; /ephemeral top level is root-owned so never default to /ephemeral/$USER directly).
-HF_HOME="${HF_HOME:-${PILOT_DATA:-/ephemeral/hr/pilot}/hf}"
+# If env.sh carries a stale HF_HOME outside PILOT_DATA, derive from PILOT_DATA instead.
+PILOT_DATA="${PILOT_DATA:-/ephemeral/hr/pilot}"
+if [ -n "${HF_HOME:-}" ] && [ "${HF_HOME#"$PILOT_DATA"}" = "$HF_HOME" ]; then
+  echo "NOTE: ignoring stale HF_HOME=$HF_HOME (not under PILOT_DATA); deriving from PILOT_DATA."
+  HF_HOME="$PILOT_DATA/hf"
+fi
+HF_HOME="${HF_HOME:-$PILOT_DATA/hf}"
 
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 EV="staging_evidence/$STAMP"

@@ -27,8 +27,15 @@ if ! mkdir -p "$PILOT_DATA" 2>/dev/null || [ ! -w "$PILOT_DATA" ]; then
   echo "  Then re-run. Default PILOT_DATA=/ephemeral/hr/pilot."
   exit 1
 fi
-export HF_HOME="${HF_HOME:-$PILOT_DATA/hf}"
+# HF_HOME must live under PILOT_DATA. A pre-set HF_HOME from an old env.sh or the user
+# shell may point at an unwritable path (e.g. /ephemeral/hf) — override it with a warning.
+if [ -n "${HF_HOME:-}" ] && [ "${HF_HOME#"$PILOT_DATA"}" = "$HF_HOME" ]; then
+  echo "NOTE: ignoring pre-set HF_HOME=$HF_HOME (not under PILOT_DATA=$PILOT_DATA)."
+  echo "  (Stale value likely from an old env.sh or your shell env. To force a custom path, set PILOT_DATA instead.)"
+fi
+export HF_HOME="$PILOT_DATA/hf"
 mkdir -p "$HF_HOME"
+[ -w "$HF_HOME" ] || { echo "STOP: HF_HOME=$HF_HOME not writable"; exit 1; }
 FREE_KB=$(df --output=avail "$HF_HOME" | tail -1)
 echo "HF_HOME=$HF_HOME  free=$((FREE_KB/1024/1024))G"
 [ "$FREE_KB" -lt $((260*1024*1024)) ] && echo "WARNING: <260G free on HF_HOME filesystem — weights need ~230G"
