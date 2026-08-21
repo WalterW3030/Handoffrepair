@@ -82,6 +82,18 @@ echo "== [3/5] host python deps (pinned; full list + rationale in docs/ENVIRONME
   "huggingface_hub[cli]" \
   pytest==9.1.1
 
+cat > env.sh <<EOF
+# source this before any pilot command
+export TOOLSANDBOX_REPO="\$(pwd)/ToolSandbox"
+export PYTHONPATH="\$(pwd)/ToolSandbox:\${PYTHONPATH:-}"
+export HF_HOME="$HF_HOME"
+export PILOT_DATA="$PILOT_DATA"
+export CUDA_VISIBLE_DEVICES=0   # Rule R3: exactly 1 GPU, always
+export PILOT_PYTHON="$PYBIN"    # Rule R4: this interpreter only
+EOF
+# shellcheck disable=SC1091
+source env.sh
+
 echo "== [3b/5] import smoke test (fails loudly if anything is missing) =="
 "$PYBIN" - <<'EOF'
 import tool_sandbox  # via PYTHONPATH, pinned commit
@@ -94,17 +106,6 @@ assert openai.__version__ == "1.17.0", openai.__version__
 print("IMPORT_SMOKE_OK")
 EOF
 "$PYBIN" -m pip freeze | tee env_freeze.txt
-
-cat > env.sh <<EOF
-# source this before any pilot command
-export TOOLSANDBOX_REPO="\$(pwd)/ToolSandbox"
-export PYTHONPATH="\$(pwd)/ToolSandbox:\${PYTHONPATH:-}"
-export HF_HOME="$HF_HOME"
-export CUDA_VISIBLE_DEVICES=0   # Rule R3: exactly 1 GPU, always
-export PILOT_PYTHON="$PYBIN"    # Rule R4: this interpreter only
-EOF
-# shellcheck disable=SC1091
-source env.sh
 
 echo "== [4/5] model weights @ pinned revisions (~230GB total, into $HF_HOME) =="
 dl () {  # dl <repo_id> <revision>

@@ -75,9 +75,15 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 3. **Driver vs container CUDA**: pinned vLLM image is CUDA 13.0.2 user-space; driver 570.195.03 supports max CUDA 12.8. CUDA 13 normally wants driver ≥580; on datacenter GPUs the container's `cuda-compat` may bridge this, but it is **not guaranteed**. Definitive test (staging_collect.sh runs it first, auto-stops): `docker run --rm --gpus '"device=0"' <pinned vllm image> nvidia-smi`. **Last technical unknown.**
 4. ~~GitHub push~~ ✅ **RESOLVED 2026-08-20**: root cause was the wrong URL — owner `WalterW3030` (user account), repo `Handoffrepair`. PAT was valid all along; API confirmed user + repo, push `cdaa586..b101939` succeeded and verified via API (commit sha + 5 file checks, all 200). Remote scrubbed of PAT. Clone URL: `git@github.com:WalterW3030/Handoffrepair.git`
 
+## 3b. Sudo use log (per R2 reporting duty)
+| # | Date | Command | Why necessary | Executed by |
+|---|---|---|---|---|
+| 1 | 2026-08-20 | `sudo mkdir -p /ephemeral/hr` | No user-writable dir on the only big disk; no no-sudo alternative | user |
+
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — setup_machine.sh step-order bug fixed: import smoke test ran before env.sh/PYTHONPATH was set → ModuleNotFoundError tool_sandbox; env.sh creation moved before the smoke test.
 - 2026-08-20 — **sudo use report #1**: `sudo mkdir -p /ephemeral/hr` (user-executed, necessary: no user-writable dir on /ephemeral, no alternative). GPUs confirmed 8×H100 PCIe 81.5GB.
 - 2026-08-20 — hostname h800-8-1 recorded (H800? pending nvidia-smi confirmation); user groups recorded (sudo present, policy unchanged).
 - 2026-08-20 — /ephemeral is root-owned at top level; user ubuntu cannot create /ephemeral/ubuntu. Rule: never write to unpermitted paths (R5); use a user-writable base dir on /ephemeral.
