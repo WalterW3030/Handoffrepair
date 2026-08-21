@@ -3,7 +3,8 @@
 # Run on the GPU machine from the repo root. Idempotent; safe to re-run.
 # Requires: HF_TOKEN env var (HuggingFace access token).
 # Rules: R2 no sudo (nothing here needs it) · R3 single GPU (no GPU use here) ·
-#        all large storage on /ephemeral (root / has only ~11G free).
+#        large storage on a USER-WRITABLE dir (PILOT_DATA; /ephemeral top level is
+#        root-owned so we never mkdir there directly — R5).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,8 +14,20 @@ TS_COMMIT=165848b9a78cead7ca7fe7c89c688b58e6501219
 
 echo "== [0/5] pre-flight environment checks =="
 python3 --version | tee python_version.txt
-# HF cache must NOT land on / (11G free). Default to /ephemeral.
-export HF_HOME="${HF_HOME:-/ephemeral/$USER/hf}"
+# HF cache must NOT land on / (2G free). Base: PILOT_DATA (default on /ephemeral).
+# HF cache must NOT land on / (2G free). Default base: PILOT_DATA on /ephemeral, but
+# /ephemeral top level is root-owned — so use a USER-WRITABLE dir. Override with:
+#   export PILOT_DATA=/some/writable/dir   (then re-run)
+PILOT_DATA="${PILOT_DATA:-/ephemeral/$USER/pilot}"
+if ! mkdir -p "$PILOT_DATA" 2>/dev/null || [ ! -w "$PILOT_DATA" ]; then
+  echo "STOP: cannot create/write PILOT_DATA=$PILOT_DATA (likely /ephemeral is root-owned)."
+  echo "  Per R5 I won't touch unpermitted paths. Do ONE of:"
+  echo "   a) point me at an existing writable dir:  export PILOT_DATA=<writable_dir> && bash scripts/setup_machine.sh"
+  echo "   b) ask your admin (their sudo):            sudo mkdir -p /ephemeral/$USER && sudo chown $USER /ephemeral/$USER"
+  echo "  Then re-run. To find a writable dir:  ls -ld /ephemeral/* 2>/dev/null"
+  exit 1
+fi
+export HF_HOME="${HF_HOME:-$PILOT_DATA/hf}"
 mkdir -p "$HF_HOME"
 FREE_KB=$(df --output=avail "$HF_HOME" | tail -1)
 echo "HF_HOME=$HF_HOME  free=$((FREE_KB/1024/1024))G"
