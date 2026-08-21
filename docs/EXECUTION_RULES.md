@@ -38,6 +38,13 @@ On any path-related error (permission denied, no space, not found, stale locatio
 2. **Understand before fixing** — identify the root cause (permissions? stale variable? full disk? moved dir?), not just the symptom. Verify against the actual filesystem facts, never guess (R1).
 3. **Update ALL related references** — every script, command, doc, and instruction that touches that path gets updated in the same pass, so no stale copy survives to fail again later. (Lesson: the `HF_HOME=/ephemeral/hf` failure happened because an old `env.sh` still carried the pre-move path while the scripts had moved on.)
 
+## R8 — Evidence via the repo's `evidence/` folder
+When a log, evidence bundle, or error output is needed for checking, **don't paste large content into chat** — push it to the repo's `evidence/` folder and I read it from GitHub:
+- `cp <file> evidence/ && git add evidence/ && git commit -m "evidence: <what>" && git push origin master`
+- Small text logs: commit directly. Large tarballs (>~25 MB): tell me first (GitHub file-size limits); we split or use a release.
+- The repo `.gitignore` keeps `staging_evidence/` raw dirs and bulk tarballs out of git by default — copy the *specific* file needed into `evidence/`.
+- Applies to all future file-checking tasks, not just staging.
+
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.

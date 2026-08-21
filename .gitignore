@@ -1,1 +1,7 @@
 __pycache__/
+
+# large/generated evidence stays out of git; only small files in evidence/ are committed
+staging_evidence/
+staging_evidence_*.tar.gz
+*.pyc
+__pycache__/
