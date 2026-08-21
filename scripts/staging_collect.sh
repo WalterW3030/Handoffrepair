@@ -141,10 +141,14 @@ declare -A MODELS=(
 )
 PORT=18080
 : > "$EV/peak_memory.txt"
+mkdir -p "$EV/cids"
 for key in "${KEYS[@]}"; do
   model="${MODELS[$key]}"
   echo "--- $key ($model) on port $PORT, GPU 0 only"
-  docker run -d --rm --name "staging_$key" --gpus '"device=0"' \
+  # NOTE: no --rm. A dead container with --rm is auto-removed, losing its logs.
+  # Use --cidfile + explicit capture + `docker rm` after, so we keep the real error.
+  cidfile="$EV/cids/$key"
+  docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus '"device=0"' \
     -v "$HF_HOME:/root/.cache/huggingface" \
     -p "$PORT:8000" \
     -e CUDA_VISIBLE_DEVICES=0 \
@@ -165,6 +169,7 @@ for key in "${KEYS[@]}"; do
       fi
       stop "server died for $key — see $EV/serve_${key}.log"
     fi
+    [ "$mem" -gt "$peak" ] && peak=$mem
     mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
     [ "$mem" -gt "$peak" ] && peak=$mem
     if curl -sf "http://localhost:$PORT/health" > /dev/null 2>&1; then ready=1; break; fi
@@ -192,7 +197,9 @@ for key in "${KEYS[@]}"; do
   mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
   [ "$mem" -gt "$peak" ] && peak=$mem
   echo "$key peak_mib=$peak" | tee -a "$EV/peak_memory.txt"
-  docker stop "staging_$key" > /dev/null
+  docker stop "staging_$key" > /dev/null 2>&1 || true
+  docker logs "staging_$key" >> "$EV/serve_${key}.log" 2>&1 || true
+  docker rm -f "staging_$key" > /dev/null 2>&1 || true   # cleanup (no --rm, so remove explicitly)
   PORT=$((PORT+1))
 done
 
