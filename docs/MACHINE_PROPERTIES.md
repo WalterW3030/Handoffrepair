@@ -20,13 +20,15 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | tmpfs | 709G | 0 | 709G | 0% | /run/qemu |
 | /dev/vda16 | 881M | 183M | 637M | 23% | /boot |
 | /dev/vda15 | 105M | 6.2M | 99M | 6% | /boot/efi |
-| /dev/vdb | 6.3T | 5.7T | **317G** | 95% | **/ephemeral** (only big disk; ⚠️ **root-owned — `mkdir /ephemeral/ubuntu` = Permission denied**; must use a user-writable subdir — scripts now use **`PILOT_DATA`** (default `/ephemeral/$USER/pilot`), overridable; setup stops with clear instructions if not writable) |
+| /dev/vdb | 6.3T | 5.7T | **317G** | 95% | **/ephemeral** — **root:root 755, ubuntu cannot write top level** (confirmed 2026-08-20). Need either an existing writable subdir (listing not yet received) or admin-created `/ephemeral/ubuntu` |
 | tmpfs | 142G | 400K | 142G | 1% | /run/user/1000 |
 
 ### GPU (from approval records — Day 0 Record 4 §remaining, Record 9 H1, Staging Approval Ledger)
 | Property | Value |
 |---|---|
 | Machine spec (approved) | **1× H100 SXM5 80GB**, ≥16 vCPU, ≥128GB RAM, ≥500GB NVMe |
+| Hostname (user paste 2026-08-20) | **`h800-8-1`** — suggests **H800** (8-GPU node), NOT H100! Both are sm_90/Hopper; FP8 supported on both. ⚠️ Approval records said H100 — needs reconciliation: `nvidia-smi --query-gpu=name,memory.total --format=csv` output still never received in full |
+| User account | `ubuntu` uid=1000, groups: adm, **sudo**, dip, lxd, libvirt, **docker** — note: user HAS sudo capability; R2 (no sudo) is a project policy the user set, kept as-is |
 | vLLM arch target | sm_90 (H100) — matches pinned container's arch list |
 
 ### Runtime environment (user-reported 2026-08-20, check answers A2–A5)
@@ -75,6 +77,7 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — hostname h800-8-1 recorded (H800? pending nvidia-smi confirmation); user groups recorded (sudo present, policy unchanged).
 - 2026-08-20 — /ephemeral is root-owned at top level; user ubuntu cannot create /ephemeral/ubuntu. Rule: never write to unpermitted paths (R5); use a user-writable base dir on /ephemeral.
 - 2026-08-20 — disk state updated from user df: / 2.2G free (98%), /ephemeral 317G free. Root filled by failed pull's partial containerd layers. vLLM images must go to /ephemeral via rootless docker.
 - 2026-08-20 — docker storage root cause: layers go to /var/lib/containerd on / (11G), not /var/lib/docker; rootless-docker-on-/ephemeral is the no-sudo fix; staging_collect.sh now pre-flights the real path.
