@@ -85,6 +85,7 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 | 4 | (only if rootless chosen) | `sudo apt install uidmap` | Rootless docker needs setuid `newuidmap`/`newgidmap` (confirmed missing 2026-08-21); no no-sudo alternative | user |
 
 ## 4. Change log
+- 2026-08-21 — HF_TOKEN set but INVALID ('Invalid user token'). HF_TOKEN env takes precedence over `hf auth login`. Fix: re-export a fresh valid token; verify with `hf auth whoami` (never echo/paste the token itself).
 - 2026-08-21 — staging progress: disk fix WORKED (containerd-snapshotter disabled, image pulled to /ephemeral, container launched, CUDA-compat probe PASSED). New failure: vLLM HF auth error — HF_TOKEN unset in shell OR gemma-4 gated-license not accepted. Fixed staging_collect.sh: (a) HF_TOKEN pre-check before launches, (b) health-loop now distinguishes HF-auth failure from a real crash instead of misreporting as CUDA mismatch.
 - 2026-08-21 — **Docker 29 storage trap**: containerd image store is default → image layers in /var/lib/containerd (NOT moved by data-root). Fix = features.containerd-snapshotter=false in daemon.json. This was the real cause of the repeated 'no space left on /var/lib/containerd' pull failures.
 - 2026-08-21 — rootless docker root cause: `newuidmap`/`newgidmap` missing (uidmap pkg); subuid/subgid/userns/XDG_RUNTIME_DIR all OK. System-docker path is primary (works, storage on /ephemeral).
