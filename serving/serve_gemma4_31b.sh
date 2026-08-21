@@ -1,31 +1,27 @@
 #!/usr/bin/env bash
-# A8 — Gemma-4-31B-IT serving (held-out target). SWITCHED from Gemma-3-27B (user decision).
-# Gemma 4 has NATIVE function calling (<|tool_call>...<tool_call|>), so NO prompt-shim needed.
-# Apache 2.0 — no gated license (HF_TOKEN only for download-rate/telemetry, not access).
-#
-# KNOWN BLOCKER (P2, revised): Gemma-4 tool calling is UNRELIABLE in vLLM <= v0.24.0 and the
-# native <|tool_call> format is not parsed by all servers. TWO serving paths; Day-0 picks the
-# one that WORKS on the pinned version, and records which in the run log:
-#
-#   PATH A (vLLM, preferred). Pin a vLLM version that INCLUDES the gemma4 tool parser
-#   (the early-v0.24 bugs were fixed shortly after; use the official Gemma-4 recipe).
-#   The official recipe REQUIRES the dedicated chat template + reasoning parser [vLLM recipes].
+# serve_gemma4_31b.sh — google/gemma-4-31B-it (held-out target) via the digest-pinned vLLM
+# container, GPU 0 only (R3). Rewritten 2026-08-20 (see serve_qwen3_8b.sh header).
+# Gemma 4 has native function calling; the gemma4 tool parser path is verified at staging
+# (gemma4_toolcall_probe.json). If the probe fails, serving/gemma_tool_shim.py is the
+# last-resort fallback — logged as interface distance, never hand-patched per call (Rule 26).
 set -euo pipefail
-: "${VLLM_GEMMA4_OK:?set VLLM_GEMMA4_OK=1 after Day-0 verifies vLLM parses gemma-4 tool calls}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-vllm serve google/gemma-4-31B-it \
-  --max-model-len 16384 \
-  --gpu-memory-utilization 0.92 \
-  --enable-prefix-caching \
+cd "$(dirname "$0")/.."
+# shellcheck disable=SC1091
+[ -f env.sh ] && source env.sh
+: "${VLLM_GEMMA4_OK:?set VLLM_GEMMA4_OK=1 only after the staging gemma4 tool-call probe passes}"
+export CUDA_VISIBLE_DEVICES=0   # R3
+IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
+HF_HOME="${HF_HOME:-/ephemeral/$USER/hf}"
+PORT="${PORT:-8000}"
+exec docker run --rm --name serve_gemma4_31b --gpus '"device=0"' \
+  -v "$HF_HOME:/root/.cache/huggingface" \
+  -v "$PWD/examples:/templates:ro" \
+  -p "$PORT:8000" -e CUDA_VISIBLE_DEVICES=0 ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+  "$IMAGE" \
+  --model google/gemma-4-31B-it \
+  --revision 842da3794eaa0b77d5f08bae87a17459d91ff475 \
+  --served-model-name gemma4-31b \
+  --max-model-len 8192 --gpu-memory-utilization 0.95 --enforce-eager \
   --enable-auto-tool-choice --tool-call-parser gemma4 \
   --reasoning-parser gemma4 \
-  --chat-template "${SCRIPT_DIR}/../examples/tool_chat_template_gemma4.jinja" \
-  --port 8000
-
-#   PATH B (sglang fallback, verified working for gemma-4 tool calling in community reports):
-# docker run --gpus all --ipc=host --shm-size 32g -p 8000:30000 lmsysorg/sglang:v0.5.14 \
-#   sglang serve --model-path google/gemma-4-31B-it --tool-call-parser gemma4 \
-#     --reasoning-parser gemma4 --mem-fraction-static 0.92 --host 0.0.0.0 --port 30000
-#
-# Either way, the gemma_tool_shim.py prompt-fallback REMAINS as a last resort if neither parser
-# works on the pinned stack — logged as interface distance in Gemma-4's capability manifest.
+  --chat-template /templates/tool_chat_template_gemma4.jinja

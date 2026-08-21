@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
-# A8 — Qwen3-32B serving (source in pairs 1&2, held-out source). H100/A100 80GB.
-# FP8 keeps VRAM ~32GB; FP16 (~64GB) also fits — whichever is chosen MUST be
-# recorded in configs/models.yaml (precision is part of the version pin).
+# serve_qwen3_32b.sh — Qwen3-32B via the digest-pinned vLLM container, GPU 0 only (R3).
+# Rewritten 2026-08-20 (see serve_qwen3_8b.sh header). Full-precision weights are the pinned
+# lock contents (~64GB bf16); on an 80GB GPU keep max-model-len 8192 (staging pin).
+# If precision is ever changed, it MUST be re-locked in configs/weight_sha256.lock first.
 set -euo pipefail
-vllm serve Qwen/Qwen3-32B \
-  --quantization fp8 \
-  --max-model-len 16384 \
-  --gpu-memory-utilization 0.92 \
-  --enable-prefix-caching \
-  --enable-auto-tool-choice --tool-call-parser hermes \
-  --port 8000
+cd "$(dirname "$0")/.."
+# shellcheck disable=SC1091
+[ -f env.sh ] && source env.sh
+export CUDA_VISIBLE_DEVICES=0   # R3
+IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
+HF_HOME="${HF_HOME:-/ephemeral/$USER/hf}"
+PORT="${PORT:-8000}"
+exec docker run --rm --name serve_qwen3_32b --gpus '"device=0"' \
+  -v "$HF_HOME:/root/.cache/huggingface" \
+  -p "$PORT:8000" -e CUDA_VISIBLE_DEVICES=0 ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+  "$IMAGE" \
+  --model Qwen/Qwen3-32B \
+  --revision 9216db5781bf21249d130ec9da846c4624c16137 \
+  --served-model-name qwen3-32b \
+  --max-model-len 8192 --gpu-memory-utilization 0.95 --enforce-eager \
+  --enable-auto-tool-choice --tool-call-parser hermes
