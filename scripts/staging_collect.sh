@@ -151,33 +151,47 @@ for key in "${KEYS[@]}"; do
   # the cleanup at the end, leaving the dead container holding the name.
   docker rm -f "staging_$key" > /dev/null 2>&1 || true
   cidfile="$EV/cids/$key"
+  # --ipc=host is REQUIRED by the vLLM OpenAI image (PyTorch uses shared memory
+  # for worker IPC). Without it the engine can die at startup on ANY model with
+  # almost no log — a likely culprit here, NOT necessarily OOM.
   docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus '"device=0"' \
+    --ipc=host \
     -v "$HF_HOME:/root/.cache/huggingface" \
     -p "$PORT:8000" \
     -e CUDA_VISIBLE_DEVICES=0 \
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
     --model "$model" --served-model-name "$key" \
-    --max-model-len 8192 --gpu-memory-utilization 0.95 --enforce-eager \
+    --max-model-len 8192 --gpu-memory-utilization 0.90 --enforce-eager \
     > /dev/null || stop "docker run failed for $key"
+
+  # Always capture logs + exit code + OOMKilled, even if the container dies
+  # before the first poll — this is what finally reveals the REAL cause.
+  capture_diag() {
+    docker logs "staging_$key" > "$EV/serve_${key}.log" 2>&1 || true
+    { echo "exit_code=$(docker inspect -f '{{.State.ExitCode}}' "staging_$key" 2>/dev/null)";
+      echo "oom_killed=$(docker inspect -f '{{.State.OOMKilled}}' "staging_$key" 2>/dev/null)";
+      echo "error=$(docker inspect -f '{{.State.Error}}' "staging_$key" 2>/dev/null)"; } \
+      > "$EV/diag_${key}.txt" 2>/dev/null || true
+  }
 
   ready=0; peak=0
   for _ in $(seq 1 180); do   # up to 30 min
     sleep 10
     if ! docker ps --format '{{.Names}}' | grep -qx "staging_$key"; then
-      docker logs "staging_$key" > "$EV/serve_${key}.log" 2>&1 || true
+      capture_diag
       # distinguish HF-auth failure from a real crash for an accurate STOP
       if grep -qiE "authentication|unauthorized|401|403|gated|token" "$EV/serve_${key}.log"; then
         stop "HF auth failed serving $key — see $EV/serve_${key}.log. Likely: HF_TOKEN unset/invalid, or the gated gemma-4 license not accepted for this token's account."
       fi
-      stop "server died for $key — see $EV/serve_${key}.log"
+      stop "server died for $key — see $EV/serve_${key}.log and $EV/diag_${key}.txt (exit_code/oom_killed)"
     fi
     mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
     [ "$mem" -gt "$peak" ] && peak=$mem
     if curl -sf "http://localhost:$PORT/health" > /dev/null 2>&1; then ready=1; break; fi
   done
-  docker logs "staging_$key" > "$EV/serve_${key}.log" 2>&1 || true
-  [ "$ready" = 1 ] || stop "health timeout (30 min) for $key — see $EV/serve_${key}.log"
+  capture_diag
+  [ "$ready" = 1 ] || stop "health timeout (30 min) for $key — see $EV/serve_${key}.log and $EV/diag_${key}.txt"
 
   curl -s "http://localhost:$PORT/v1/chat/completions" \
     -H 'Content-Type: application/json' \
