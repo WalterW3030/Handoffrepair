@@ -76,28 +76,33 @@ echo "== [0/5] environment record =="
 cat "$EV/env.txt"
 
 echo "== [0b/5] docker storage free-space pre-flight (vLLM image needs ~20G) =="
-# The containerd snapshotter writes image layers under /var/lib/containerd, NOT
-# necessarily DockerRootDir — so check the filesystem that actually holds it.
+# Docker 29 defaults to the CONTAINERD image store: image layers go to
+# /var/lib/containerd (NOT moved by daemon.json data-root). We require images under the
+# big disk. Detect the snapshotter; if containerd store is active, require its path off /.
+SNAP=$(docker info --format '{{.DriverStatus}}' 2>/dev/null || echo "")
+echo "  docker DriverStatus: $SNAP"
+if echo "$SNAP" | grep -q "io.containerd.snapshotter"; then
+  echo "STOP: Docker is using the CONTAINERD image store (Docker 29 default) — image layers"
+  echo "  go to /var/lib/containerd on the root disk (2G free), and daemon.json data-root does"
+  echo "  NOT move them. Fix (you run, sudo — reported per R2):"
+  echo '    echo -e "{\n  \"data-root\": \"/ephemeral/hr/docker-data\",\n  \"features\": {\"containerd-snapshotter\": false}\n}" | sudo tee /etc/docker/daemon.json'
+  echo "    sudo systemctl restart docker"
+  echo "  Then verify:  docker info --format '{{.DriverStatus}}'  (should NOT mention containerd)"
+  exit 1
+fi
+# overlay2/classic store: images live under DockerRootDir — check its free space.
 STOR_PATH=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo "")
-for cand in "$STOR_PATH" /var/lib/containerd /var/lib/docker; do
-  [ -n "$cand" ] || continue
-  if df_out=$(df --output=avail "$cand" 2>/dev/null | tail -1); then
-    free_g=$(( df_out / 1024 / 1024 ))
-    echo "  $cand -> ${free_g}G free"
-    if [ "$free_g" -lt 40 ]; then
-      echo "STOP: docker storage path $cand has only ${free_g}G free (<40G). The vLLM image (~20G) won't fit."
-      echo "  No-sudo fix (R2): run staging against a ROOTLESS docker with data on a user-writable dir:"
-      echo "    conda install -c conda-forge docker-cli rootlesskit slirp4netns fuse-overlayfs -y"
-      echo "    export PILOT_DATA=${PILOT_DATA:-/ephemeral/hr/pilot}   # must be user-writable"
-      echo "    mkdir -p \"\$PILOT_DATA/docker-rootless\""
-      echo "    export DOCKER_HOST=unix:///run/user/\$(id -u)/docker.sock"
-      echo "    rootlesskit --net=slirp4netns dockerd-rootless.sh --data-root \"\$PILOT_DATA/docker-rootless\" --host unix:///run/user/\$(id -u)/docker.sock &"
-      echo "  Then re-run with DOCKER_HOST set. (Or ask your admin to point dockerd data-root at a writable dir.)"
-      exit 1
-    fi
-    break
+echo "  DockerRootDir=$STOR_PATH"
+if [ -n "$STOR_PATH" ]; then
+  free_kb=$(df --output=avail "$STOR_PATH" 2>/dev/null | tail -1 || echo 0)
+  free_g=$(( free_kb / 1024 / 1024 ))
+  echo "  ${STOR_PATH} -> ${free_g}G free"
+  if [ "$free_g" -lt 40 ]; then
+    echo "STOP: docker image storage $STOR_PATH has only ${free_g}G free (<40G) — vLLM image (~20G) won't fit."
+    echo "  Point data-root at /ephemeral/hr/docker-data in /etc/docker/daemon.json (sudo, reported) and restart docker."
+    exit 1
   fi
-done
+fi
 
 echo "== [1/5] pull pinned vLLM image and verify digest =="
 docker pull "$IMAGE" | tee "$EV/docker_pull.log" || stop "docker pull failed"
