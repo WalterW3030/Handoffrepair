@@ -147,6 +147,9 @@ for key in "${KEYS[@]}"; do
   echo "--- $key ($model) on port $PORT, GPU 0 only"
   # NOTE: no --rm. A dead container with --rm is auto-removed, losing its logs.
   # Use --cidfile + explicit capture + `docker rm` after, so we keep the real error.
+  # Remove any stale container of this name first: a previous STOP aborts before
+  # the cleanup at the end, leaving the dead container holding the name.
+  docker rm -f "staging_$key" > /dev/null 2>&1 || true
   cidfile="$EV/cids/$key"
   docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus '"device=0"' \
     -v "$HF_HOME:/root/.cache/huggingface" \
@@ -169,7 +172,6 @@ for key in "${KEYS[@]}"; do
       fi
       stop "server died for $key — see $EV/serve_${key}.log"
     fi
-    [ "$mem" -gt "$peak" ] && peak=$mem
     mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
     [ "$mem" -gt "$peak" ] && peak=$mem
     if curl -sf "http://localhost:$PORT/health" > /dev/null 2>&1; then ready=1; break; fi
