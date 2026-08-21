@@ -61,7 +61,7 @@ echo "== [3/5] host python deps (pinned; full list + rationale in docs/ENVIRONME
 "$PYBIN" -m pip install \
   openai==1.17.0 \
   pydantic==2.7.4 \
-  pydantic-core==2.18.2 \
+  pydantic-core==2.18.4 \
   polars==0.20.31 \
   phonenumbers pycountry geopy geographiclib holidays pint \
   flexcache flexparser absl-py distro \

@@ -4,7 +4,7 @@
 ## 1. Python version
 | Where | Version | Basis |
 |---|---|---|
-| pilot env on GPU machine | **3.10, 3.11, or 3.12 — NOT 3.13+** | polars==0.20.31 ships one abi3 wheel (cp38-abi3, works ≤3.12); pydantic-core==2.18.2 wheels stop at cp312 (both verified on PyPI 2026-08-20). Conda's default python is often 3.13 → use `conda create -n handoffrepair python=3.12` |
+| pilot env on GPU machine | **3.10, 3.11, or 3.12 — NOT 3.13+** | polars==0.20.31 ships one abi3 wheel (cp38-abi3, works ≤3.12); pydantic-core==2.18.4 wheels stop at cp312 (both verified on PyPI 2026-08-20). Conda's default python is often 3.13 → use `conda create -n handoffrepair python=3.12` |
 | Host system python | unknown — **open check #6** (`python3 --version`) | used only to create the env |
 
 Rule R4: everything runs inside an isolated env — **either** the project venv (`<repo>/.venv`) **or** a dedicated conda env (user's machine uses conda); `setup_machine.sh` auto-detects and records the interpreter in `env.sh` (`PILOT_PYTHON`).
@@ -16,7 +16,7 @@ Rule R4: everything runs inside an isolated env — **either** the project venv 
 |---|---|---|
 | openai | **1.17.0** | vLLM server is OpenAI-API-compatible; pilot `vllm_client.py` uses the openai client. Pinned old on purpose: newer openai + pydantic conflict (circular import) — found empirically |
 | pydantic | **2.7.4** | ToolSandbox core models (Scenario/ExecutionContext) are pydantic; 2.11.4 broke with openai 1.17.0 — pinned down empirically |
-| pydantic-core | **2.18.2** | must match pydantic 2.7.4 |
+| pydantic-core | **2.18.4** | must match pydantic 2.7.4 |
 | polars | **0.20.31** | ToolSandbox database layer (`tool_sandbox/common/…`) — API changed across versions; **critical pin** |
 | pytest | 9.1.1 | repo `requirements-lock.txt` (CPU-verifiable harness) |
 
@@ -48,7 +48,7 @@ conda create -n handoffrepair python=3.12 -y    # NOT 3.13 — see §1
 conda activate handoffrepair
 python -m pip install --upgrade pip
 python -m pip install \
-  openai==1.17.0 pydantic==2.7.4 pydantic-core==2.18.2 polars==0.20.31 \
+  openai==1.17.0 pydantic==2.7.4 pydantic-core==2.18.4 polars==0.20.31 \
   phonenumbers pycountry geopy geographiclib holidays pint \
   flexcache flexparser absl-py distro \
   numpy tqdm pyyaml "huggingface_hub[cli]" pytest==9.1.1
@@ -93,4 +93,5 @@ Two options, in order of preference:
 If the repo is actually public-readable, cloning needs no token at all — only pushes do.
 
 ## 5. Change log
+- 2026-08-20 — **pin fix**: pydantic-core 2.18.2→**2.18.4** (pydantic 2.7.4 hard-requires ==2.18.4; 2.18.2 was a transcription typo, caught by user's pip run). Verified via PyPI: openai 1.17.0 needs pydantic<3,>=1.9.0; pydantic-core 2.18.4 wheels cp38–cp312 (no cp313 → 3.12 stays required).
 - 2026-08-20 — initial; dep set verified against clean-env dry-run/soak evidence; ToolSandbox setup.py re-check deferred to machine (egress blocked here).
