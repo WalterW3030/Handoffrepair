@@ -57,7 +57,7 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 |---|---|
 | Working path | `/home/ubuntu/HandoffRepair` |
 | SSH deploy key | `~/.ssh/id_ed25519_ww3030` (+ `.pub`) — added to GitHub repo deploy keys |
-| GitHub repo (correct URL) | **`WalterW3030/Handoffrepair`** — owner is the user account, not an org. Earlier failures: wrong repo name AND wrong owner |
+| GitHub repo (correct URL) | **`git@github.com:WalterW3030/Handoffrepair.git`** (SSH, deploy key) · `https://github.com/WalterW3030/Handoffrepair.git` (HTTPS). Owner = user account `WalterW3030`, repo name `Handoffrepair` — any URL with owner `handoffrepair` or name `handoffrepair-pilot` is WRONG (the cause of all earlier push/clone failures) |
 | Repo directory name on machine | `Handoffrepair` (user's original clone; canonical name — all scripts are dirname-agnostic) |
 
 **Clone error diagnosis (2026-08-20):** `Repository not found` with a *working* key = wrong repo **name** in the URL, not an auth failure (auth failure says "Permission denied"). My earlier instructions used `handoffrepair-pilot`; the actual repo is `Handoffrepair`. Correct clone command:

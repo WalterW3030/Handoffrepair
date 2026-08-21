@@ -4,7 +4,7 @@ Date: 2026-08-20 · Repo HEAD at audit: `96569f5` · Rules checked: R1 (awarenes
 ## 1. Structure inventory (recorded)
 
 ```
-handoffrepair-pilot/
+Handoffrepair/
 ├── scripts/                     # machine-day entry points
 │   ├── setup_machine.sh         # one-time setup: env, ToolSandbox clone, deps, weights, hash verify
 │   └── staging_collect.sh       # approved M1 staging: digest match, CUDA probe, per-model smoke, evidence bundle

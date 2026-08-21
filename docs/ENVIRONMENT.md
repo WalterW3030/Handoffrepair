@@ -43,7 +43,7 @@ Rule R4: everything runs inside an isolated env — **either** the project venv 
 
 **Conda path (user's machine):**
 ```bash
-cd /ephemeral/$USER/handoffrepair-pilot
+cd /ephemeral/$USER/Handoffrepair
 conda create -n handoffrepair python=3.12 -y    # NOT 3.13 — see §1
 conda activate handoffrepair
 python -m pip install --upgrade pip
@@ -85,7 +85,7 @@ Two options, in order of preference:
   ```bash
   ssh-keygen -t ed25519 -f ~/.ssh/handoffrepair_deploy -N ""
   cat ~/.ssh/handoffrepair_deploy.pub   # paste this into GitHub → repo Settings → Deploy keys → Add (allow write access)
-  git clone -c core.sshCommand="ssh -i ~/.ssh/handoffrepair_deploy" git@github.com:handoffrepair/handoffrepair-pilot.git
+  git clone -c core.sshCommand="ssh -i ~/.ssh/handoffrepair_deploy" git@github.com:WalterW3030/Handoffrepair.git
   ```
   Then pushes from the machine work without any token in URLs or chat.
 - **B. Fresh fine-grained PAT:** GitHub → Settings → Developer settings → Fine-grained tokens → access to this repo only, `Contents: read/write`. Paste it **in this chat only if you accept it is disposable** (same handling as before: used in a temporary remote URL, scrubbed immediately, revoked by you after the RC tag push). Never stored in repo config.
