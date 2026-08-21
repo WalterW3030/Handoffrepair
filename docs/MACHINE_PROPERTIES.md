@@ -58,7 +58,7 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 ### Machine filesystem / access (user-reported 2026-08-20)
 | Property | Value |
 |---|---|
-| Working path | **`/home/ubuntu/HandoffRepair/Handoffrepair`** (the git clone root; user-confirmed pwd) |
+| Working path | **`/ephemeral/hr/Handoffrepair`** (repo MOVED here 2026-08-20 — root disk `/` only 2.2 G free; old path `/home/ubuntu/HandoffRepair/Handoffrepair` is retired) |
 | SSH deploy key | `~/.ssh/id_ed25519_ww3030` (+ `.pub`) — added to GitHub repo deploy keys |
 | GitHub repo (correct URL) | **`git@github.com:WalterW3030/Handoffrepair.git`** (SSH, deploy key) · `https://github.com/WalterW3030/Handoffrepair.git` (HTTPS). Owner = user account `WalterW3030`, repo name `Handoffrepair` — any URL with owner `handoffrepair` or name `handoffrepair-pilot` is WRONG (the cause of all earlier push/clone failures) |
 | Repo directory name on machine | `Handoffrepair` (user's original clone; canonical name — all scripts are dirname-agnostic) |
@@ -81,6 +81,7 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 | 1 | 2026-08-20 | `sudo mkdir -p /ephemeral/hr` | No user-writable dir on the only big disk; no no-sudo alternative | user |
 
 ## 4. Change log
+- 2026-08-20 — repo moved to /ephemeral/hr/Handoffrepair (user-executed mv); huggingface-cli deprecated → scripts use `hf` only.
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
 - 2026-08-20 — setup_machine.sh step-order bug fixed: import smoke test ran before env.sh/PYTHONPATH was set → ModuleNotFoundError tool_sandbox; env.sh creation moved before the smoke test.

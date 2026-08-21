@@ -108,10 +108,9 @@ EOF
 "$PYBIN" -m pip freeze | tee env_freeze.txt
 
 echo "== [4/5] model weights @ pinned revisions (~230GB total, into $HF_HOME) =="
-dl () {  # dl <repo_id> <revision>
+dl () {  # dl <repo_id> <revision>  (hf CLI only — huggingface-cli is deprecated/removed)
   echo "--- $1 @ $2"
-  hf download "$1" --revision "$2" \
-    || huggingface-cli download "$1" --revision "$2"
+  hf download "$1" --revision "$2"
 }
 # revisions copied verbatim from configs/weight_sha256.lock (single source of truth)
 dl "Qwen/Qwen3-32B"                                9216db5781bf21249d130ec9da846c4624c16137
