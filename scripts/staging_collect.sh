@@ -36,6 +36,15 @@ echo "== [0/5] environment record =="
   docker info --format 'DockerRootDir={{.DockerRootDir}}' 2>/dev/null || echo "docker info failed (are you in the docker group? no sudo per R2)"
   echo "HF_HOME=$HF_HOME"
   echo "RAPID_API_KEY set: ${RAPID_API_KEY:+yes}${RAPID_API_KEY:-NO (needed for main run, not staging)}"
+  if [ -n "${RAPID_API_KEY:-}" ]; then
+    if curl -sf -m 15 -o /dev/null \
+        -H "X-RapidAPI-Key: $RAPID_API_KEY" -H "X-RapidAPI-Host: forward-reverse-geocoding.p.rapidapi.com" \
+        "https://forward-reverse-geocoding.p.rapidapi.com/v1/search?q=Paris"; then
+      echo "RAPID_API_KEY probe: PASS (value not recorded)"
+    else
+      echo "RAPID_API_KEY probe: FAIL (key present but call failed) — must pass before main run"
+    fi
+  fi
 } > "$EV/env.txt" 2>&1
 cat "$EV/env.txt"
 

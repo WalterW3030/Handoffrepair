@@ -108,5 +108,20 @@ dl "google/gemma-4-31B-it"                         842da3794eaa0b77d5f08bae87a17
 echo "== [5/5] verify all 39 weight files against lock =="
 "$PYBIN" tools/hash_weights.py --root "$HF_HOME" --out weight_hash_verify.yaml
 
+echo "== [5b/5] RAPID_API_KEY probe (secret: env var only, never logged/stored) =="
+if [ -z "${RAPID_API_KEY:-}" ]; then
+  echo "RAPID_API_KEY not set — OK for staging; REQUIRED before the main run (11/78 scenarios call RapidAPI tools)."
+  echo "  Set it on this machine only:  echo 'export RAPID_API_KEY=<key>' >> ~/.bashrc"
+else
+  if curl -sf -m 15 -o /dev/null \
+      -H "X-RapidAPI-Key: $RAPID_API_KEY" -H "X-RapidAPI-Host: forward-reverse-geocoding.p.rapidapi.com" \
+      "https://forward-reverse-geocoding.p.rapidapi.com/v1/search?q=Paris"; then
+    echo "RAPID_API_KEY probe: PASS (value not recorded)"
+  else
+    echo "RAPID_API_KEY probe: FAIL — key present but API call failed (key invalid, API not subscribed, or host mismatch)."
+    echo "  Not blocking setup, but the main run gate will require a passing probe."
+  fi
+fi
+
 echo
 echo "SETUP OK. Next: bash scripts/staging_collect.sh"

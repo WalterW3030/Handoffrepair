@@ -52,13 +52,12 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | Host python deps | per `scripts/setup_machine.sh` (polars==0.20.31, pydantic==2.7.4, openai==1.17.0, …) |
 
 ## 3. Open checks — remaining
-All six original checks are now **answered** (recorded above). Remaining unverified items, in staging order:
-1. **Driver vs container CUDA**: pinned vLLM image is CUDA 13.0.2 user-space; driver 570.195.03 supports max CUDA 12.8. CUDA 13 normally wants driver ≥580; on datacenter GPUs the container's `cuda-compat` may bridge this, but it is **not guaranteed**. Definitive test (staging_collect.sh runs it first, auto-stops):
-   `docker run --rm --gpus '"device=0"' <pinned vllm image> nvidia-smi`
-   If that errors with a CUDA driver mismatch → STOP; we then decide between (a) cuda-compat, (b) re-pinning to a CUDA-12.8-based vLLM image (formal lock change).
-2. **gemma-4 license acceptance** on HuggingFace (user action, web).
-3. **RAPID_API_KEY** obtained and set on the machine (main run only).
+1. ~~gemma-4 license acceptance~~ ✅ accepted by user (2026-08-20, confirmed in chat).
+2. **RAPID_API_KEY**: received from user 2026-08-20 — **handled as secret**: never written to repo/docs, stored as env var on the machine only (`export RAPID_API_KEY=...` in `~/.bashrc`); validity verified by the probe in `setup_machine.sh` §5b (records PASS/FAIL only, never the value).
+3. **Driver vs container CUDA**: pinned vLLM image is CUDA 13.0.2 user-space; driver 570.195.03 supports max CUDA 12.8. CUDA 13 normally wants driver ≥580; on datacenter GPUs the container's `cuda-compat` may bridge this, but it is **not guaranteed**. Definitive test (staging_collect.sh runs it first, auto-stops): `docker run --rm --gpus '"device=0"' <pinned vllm image> nvidia-smi`. **Last technical unknown.**
+4. **GitHub push from sandbox**: egress to github.com currently blocked (connection timeout 2026-08-20; repo is not anonymously readable). Sync path: user's SSH deploy key (added 2026-08-20) — pull/push machine-side, or relay via attached files.
 
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — B6–B8: SSH deploy key added (machine-side sync); gemma-4 license accepted; RAPID_API_KEY received (secret: env var only, probe logs pass/fail only). GitHub egress from sandbox blocked → push pending.
