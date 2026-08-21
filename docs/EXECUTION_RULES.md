@@ -6,10 +6,10 @@ Binding on every execution step of the HandoffRepair pilot, in this sandbox and 
 - Always be aware of the recorded machine properties (driver, CUDA, disks, versions) and of every package/model/container version pinned in the repo.
 - For anything not recorded or not sure: **check it first, or ask the user to check** — never guess. Open checks are listed in `Machine Properties.md` §3.
 
-## R2 — No sudo
-- Never use sudo in any script or command, and never ask the user to run sudo.
-- If something seems to need sudo (e.g. Docker daemon config), first exhaust alternatives: user-space paths (`$HOME`, `/ephemeral`), environment variables (`HF_HOME`, `XDG_DATA_HOME`), rootless runtimes (rootless podman/docker), per-user permissions (docker group — the user checks, not sudo-installs).
-- Only if all alternatives are exhausted, report the blocker and the exact minimal privileged action to the user as a decision — never as a step to silently run.
+## R2 — Avoid sudo (amended 2026-08-20 per user)
+- Never put sudo in scripts; always exhaust no-sudo alternatives first (user-space paths, env vars, rootless runtimes, group permissions).
+- If sudo is genuinely necessary: present the exact minimal command to the user — **the user runs it themselves**.
+- **Every necessary sudo use must be reported**: logged in `Machine Properties.md` change log with the command and why it was necessary. (Report #1: `sudo mkdir -p /ephemeral/hr`, 2026-08-20 — no user-writable dir existed on the only big disk.)
 
 ## R3 — Exactly 1 GPU
 - All commands, scripts, and configs use exactly one GPU: `CUDA_VISIBLE_DEVICES=0` and/or `docker run --gpus '"device=0"'`.

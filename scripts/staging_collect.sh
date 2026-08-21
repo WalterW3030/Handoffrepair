@@ -21,7 +21,7 @@ IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8f
 EXPECT_DIGEST="sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 # HF_HOME comes from env.sh (written by setup_machine.sh from PILOT_DATA — a user-writable
 # dir; /ephemeral top level is root-owned so never default to /ephemeral/$USER directly).
-HF_HOME="${HF_HOME:-${PILOT_DATA:-/ephemeral/$USER/pilot}/hf}"
+HF_HOME="${HF_HOME:-${PILOT_DATA:-/ephemeral/hr/pilot}/hf}"
 
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 EV="staging_evidence/$STAMP"
@@ -63,7 +63,7 @@ for cand in "$STOR_PATH" /var/lib/containerd /var/lib/docker; do
       echo "STOP: docker storage path $cand has only ${free_g}G free (<40G). The vLLM image (~20G) won't fit."
       echo "  No-sudo fix (R2): run staging against a ROOTLESS docker with data on a user-writable dir:"
       echo "    conda install -c conda-forge docker-cli rootlesskit slirp4netns fuse-overlayfs -y"
-      echo "    export PILOT_DATA=${PILOT_DATA:-/ephemeral/\$USER/pilot}   # must be user-writable"
+      echo "    export PILOT_DATA=${PILOT_DATA:-/ephemeral/hr/pilot}   # must be user-writable"
       echo "    mkdir -p \"\$PILOT_DATA/docker-rootless\""
       echo "    export DOCKER_HOST=unix:///run/user/\$(id -u)/docker.sock"
       echo "    rootlesskit --net=slirp4netns dockerd-rootless.sh --data-root \"\$PILOT_DATA/docker-rootless\" --host unix:///run/user/\$(id -u)/docker.sock &"

@@ -18,13 +18,13 @@ python3 --version | tee python_version.txt
 # HF cache must NOT land on / (2G free). Default base: PILOT_DATA on /ephemeral, but
 # /ephemeral top level is root-owned — so use a USER-WRITABLE dir. Override with:
 #   export PILOT_DATA=/some/writable/dir   (then re-run)
-PILOT_DATA="${PILOT_DATA:-/ephemeral/$USER/pilot}"
+PILOT_DATA="${PILOT_DATA:-/ephemeral/hr/pilot}"
 if ! mkdir -p "$PILOT_DATA" 2>/dev/null || [ ! -w "$PILOT_DATA" ]; then
   echo "STOP: cannot create/write PILOT_DATA=$PILOT_DATA (likely /ephemeral is root-owned)."
-  echo "  Per R5 I won't touch unpermitted paths. Do ONE of:"
+  echo "  Per R2/R5 I won't use sudo or touch unpermitted paths. Do ONE of:"
   echo "   a) point me at an existing writable dir:  export PILOT_DATA=<writable_dir> && bash scripts/setup_machine.sh"
-  echo "   b) ask your admin (their sudo):            sudo mkdir -p /ephemeral/$USER && sudo chown $USER /ephemeral/$USER"
-  echo "  Then re-run. To find a writable dir:  ls -ld /ephemeral/* 2>/dev/null"
+  echo "   b) (you run, sudo — reported per R2):     sudo mkdir -p /ephemeral/hr && sudo chown $USER:$USER /ephemeral/hr"
+  echo "  Then re-run. Default PILOT_DATA=/ephemeral/hr/pilot."
   exit 1
 fi
 export HF_HOME="${HF_HOME:-$PILOT_DATA/hf}"

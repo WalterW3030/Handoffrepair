@@ -20,14 +20,15 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | tmpfs | 709G | 0 | 709G | 0% | /run/qemu |
 | /dev/vda16 | 881M | 183M | 637M | 23% | /boot |
 | /dev/vda15 | 105M | 6.2M | 99M | 6% | /boot/efi |
-| /dev/vdb | 6.3T | 5.7T | **317G** | 95% | **/ephemeral** — **root:root 755, ubuntu cannot write top level** (confirmed 2026-08-20). Need either an existing writable subdir (listing not yet received) or admin-created `/ephemeral/ubuntu` |
+| /dev/vdb | 6.3T | 5.7T | **317G** | 95% | **/ephemeral** — root:root 755 top level; other subdirs belong to other users (not listed per privacy). **User created `/ephemeral/hr`** (sudo, 2026-08-20, reported) → canonical base dir: **`PILOT_DATA=/ephemeral/hr/pilot`** |
 | tmpfs | 142G | 400K | 142G | 1% | /run/user/1000 |
 
 ### GPU (from approval records — Day 0 Record 4 §remaining, Record 9 H1, Staging Approval Ledger)
 | Property | Value |
 |---|---|
 | Machine spec (approved) | **1× H100 SXM5 80GB**, ≥16 vCPU, ≥128GB RAM, ≥500GB NVMe |
-| Hostname (user paste 2026-08-20) | **`h800-8-1`** — suggests **H800** (8-GPU node), NOT H100! Both are sm_90/Hopper; FP8 supported on both. ⚠️ Approval records said H100 — needs reconciliation: `nvidia-smi --query-gpu=name,memory.total --format=csv` output still never received in full |
+| Hostname | `h800-8-1` (misleading name — GPUs are H100, see below) |
+| GPU (CONFIRMED 2026-08-20, user nvidia-smi) | **8× NVIDIA H100 PCIe, 81559 MiB each** — H100 confirmed (not H800). R3: we use exactly **1** (device 0) regardless. sm_90, FP8 OK, matches container arch |
 | User account | `ubuntu` uid=1000, groups: adm, **sudo**, dip, lxd, libvirt, **docker** — note: user HAS sudo capability; R2 (no sudo) is a project policy the user set, kept as-is |
 | vLLM arch target | sm_90 (H100) — matches pinned container's arch list |
 
@@ -77,6 +78,7 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — **sudo use report #1**: `sudo mkdir -p /ephemeral/hr` (user-executed, necessary: no user-writable dir on /ephemeral, no alternative). GPUs confirmed 8×H100 PCIe 81.5GB.
 - 2026-08-20 — hostname h800-8-1 recorded (H800? pending nvidia-smi confirmation); user groups recorded (sudo present, policy unchanged).
 - 2026-08-20 — /ephemeral is root-owned at top level; user ubuntu cannot create /ephemeral/ubuntu. Rule: never write to unpermitted paths (R5); use a user-writable base dir on /ephemeral.
 - 2026-08-20 — disk state updated from user df: / 2.2G free (98%), /ephemeral 317G free. Root filled by failed pull's partial containerd layers. vLLM images must go to /ephemeral via rootless docker.
