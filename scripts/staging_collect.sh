@@ -48,6 +48,29 @@ echo "== [0/5] environment record =="
 } > "$EV/env.txt" 2>&1
 cat "$EV/env.txt"
 
+echo "== [0b/5] docker storage free-space pre-flight (vLLM image needs ~20G) =="
+# The containerd snapshotter writes image layers under /var/lib/containerd, NOT
+# necessarily DockerRootDir — so check the filesystem that actually holds it.
+STOR_PATH=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo "")
+for cand in "$STOR_PATH" /var/lib/containerd /var/lib/docker; do
+  [ -n "$cand" ] || continue
+  if df_out=$(df --output=avail "$cand" 2>/dev/null | tail -1); then
+    free_g=$(( df_out / 1024 / 1024 ))
+    echo "  $cand -> ${free_g}G free"
+    if [ "$free_g" -lt 40 ]; then
+      echo "STOP: docker storage path $cand has only ${free_g}G free (<40G). The vLLM image (~20G) won't fit."
+      echo "  No-sudo fix (R2): run staging against a ROOTLESS docker with data on /ephemeral:"
+      echo "    conda install -c conda-forge docker-cli rootlesskit slirp4netns fuse-overlayfs -y"
+      echo "    mkdir -p /ephemeral/\$USER/docker-rootless"
+      echo "    export DOCKER_HOST=unix:///run/user/\$(id -u)/docker.sock"
+      echo "    rootlesskit --net=slirp4netns dockerd-rootless.sh --data-root /ephemeral/\$USER/docker-rootless --host unix:///run/user/\$(id -u)/docker.sock &"
+      echo "  Then re-run with DOCKER_HOST set. (Or ask your admin to point dockerd data-root at /ephemeral.)"
+      exit 1
+    fi
+    break
+  fi
+done
+
 echo "== [1/5] pull pinned vLLM image and verify digest =="
 docker pull "$IMAGE" | tee "$EV/docker_pull.log" || stop "docker pull failed"
 ACTUAL=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" | sed 's/.*@//')

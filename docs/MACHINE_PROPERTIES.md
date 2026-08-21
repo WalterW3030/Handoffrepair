@@ -34,7 +34,7 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 |---|---|
 | Conda env python | **3.12** ✅ (within required 3.10–3.12) |
 | Docker | Engine Community **29.1.3** (API 1.52, containerd 2.2.1, runc 1.3.4) — client+server respond **as user, no sudo** ✅ (docker group OK) |
-| DockerRootDir | `/var/lib/docker` — **>40 G free** (user-verified) ✅. Note: earlier `df` showed `/` at 11 G avail — so `/var/lib/docker` is on another mount or storage was expanded after approval; staging re-records `df` and will catch any discrepancy |
+| Docker storage | ⚠️ **CORRECTED 2026-08-20**: image layers actually write to **`/var/lib/containerd`** (containerd snapshotter), which is on **`/` (11 G free)** → ~20 GB vLLM pull failed "no space left on device". The earlier `>40G on /var/lib/docker` was misleading (wrong path). **Fix: rootless docker with data on `/ephemeral`** (no sudo) — commands in `staging_collect.sh` §0b stop message |
 | Machine network | `huggingface.co` → **HTTP/2 200** ✅; `registry-1.docker.io` reachable ✅ (weight/image pulls possible machine-side) |
 
 ### Consequences (derived, binding for all planning)
@@ -75,6 +75,7 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — docker storage root cause: layers go to /var/lib/containerd on / (11G), not /var/lib/docker; rootless-docker-on-/ephemeral is the no-sudo fix; staging_collect.sh now pre-flights the real path.
 - 2026-08-20 — ToolSandbox upstream URL fixed: facebookresearch/ToolSandbox 404s (moved); apple/ToolSandbox contains the pinned commit. setup_machine.sh corrected.
 - 2026-08-20 — push resolved: correct URL github.com/WalterW3030/Handoffrepair; all 9 commits now on GitHub, verified via API.
 - 2026-08-20 — C.1: machine path /home/ubuntu/HandoffRepair, deploy key id_ed25519_ww3030, repo name corrected to Handoffrepair (clone error diagnosed: wrong repo name, not auth).
