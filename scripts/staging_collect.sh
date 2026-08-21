@@ -113,7 +113,9 @@ ACTUAL=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" | sed 's/.*
 echo "== [2/5] CUDA compat probe: nvidia-smi INSIDE the container (1 GPU) =="
 # Driver is 570.195.03 (CUDA 12.8); image user-space is CUDA 13.0.2 — must verify
 # the container actually sees the GPU before any weight download/launch.
-docker run --rm --gpus '"device=0"' "$IMAGE" nvidia-smi \
+# NOTE: this image's default ENTRYPOINT is `vllm serve`, so a bare `docker run IMAGE nvidia-smi`
+# makes vLLM treat "nvidia-smi" as a MODEL (→ 401 download error). Must override the entrypoint.
+docker run --rm --gpus '"device=0"' --entrypoint nvidia-smi "$IMAGE" \
   | tee "$EV/container_nvidia_smi.txt" \
   || stop "CUDA/driver mismatch — container cannot see GPU. Report back; options: cuda-compat or re-pin image (lock change)."
 
