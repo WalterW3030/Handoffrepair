@@ -97,6 +97,8 @@ export HF_HOME="$HF_HOME"
 export PILOT_DATA="$PILOT_DATA"
 export CUDA_VISIBLE_DEVICES=0   # Rule R3: exactly 1 GPU, always
 export PILOT_PYTHON="$PYBIN"    # Rule R4: this interpreter only
+# Rootless docker (no sudo, R2): images live on /ephemeral (root / too small).
+export DOCKER_HOST="unix:///run/user/\$(id -u)/docker.sock"
 EOF
 # shellcheck disable=SC1091
 source env.sh

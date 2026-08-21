@@ -36,6 +36,21 @@ echo "evidence dir: $EV"
 
 stop () { echo "STOP: $1" | tee -a "$EV/STOP.txt"; exit 1; }
 
+echo "== [-1/5] docker daemon reachable? (rootless must be running first) =="
+if ! docker info >/dev/null 2>&1; then
+  echo "STOP: cannot reach docker daemon (DOCKER_HOST=${DOCKER_HOST:-<unset, default /var/run/docker.sock>})."
+  echo "  The rootless daemon is not running. Start it ONCE, persistent (survives shell exit):"
+  echo "    mkdir -p /ephemeral/hr/pilot/docker-rootless /ephemeral/hr/pilot/logs"
+  echo "    setsid bash -c 'rootlesskit --net=slirp4netns dockerd-rootless.sh \\"
+  echo "        --data-root /ephemeral/hr/pilot/docker-rootless \\"
+  echo "        --host unix:///run/user/\$(id -u)/docker.sock' \\"
+  echo "        > /ephemeral/hr/pilot/logs/dockerd.log 2>&1 < /dev/null &"
+  echo "    sleep 8 && export DOCKER_HOST=unix:///run/user/\$(id -u)/docker.sock && docker info --format '{{.DockerRootDir}}'"
+  echo "  Then re-run this script in the SAME shell (or after: source env.sh)."
+  exit 1
+fi
+echo "docker daemon OK: $(docker info --format '{{.DockerRootDir}}')"
+
 echo "== [0/5] environment record =="
 {
   date -u; uname -a
