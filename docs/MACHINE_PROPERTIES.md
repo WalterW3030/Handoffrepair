@@ -51,6 +51,20 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | Weights | 39-file SHA-256 lock (`configs/weight_sha256.lock`) |
 | Host python deps | per `scripts/setup_machine.sh` (polars==0.20.31, pydantic==2.7.4, openai==1.17.0, …) |
 
+
+### Machine filesystem / access (user-reported 2026-08-20)
+| Property | Value |
+|---|---|
+| Working path | `/home/ubuntu/HandoffRepair` |
+| SSH deploy key | `~/.ssh/id_ed25519_ww3030` (+ `.pub`) — added to GitHub repo deploy keys |
+| Repo directory name on machine | `Handoffrepair` (user's original clone; canonical name — all scripts are dirname-agnostic) |
+
+**Clone error diagnosis (2026-08-20):** `Repository not found` with a *working* key = wrong repo **name** in the URL, not an auth failure (auth failure says "Permission denied"). My earlier instructions used `handoffrepair-pilot`; the actual repo is `Handoffrepair`. Correct clone command:
+```bash
+git clone -c core.sshCommand="ssh -i ~/.ssh/id_ed25519_ww3030" git@github.com:handoffrepair/Handoffrepair.git
+```
+Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts use `cd "$(dirname "$0")/.."` so they work under any directory name.
+
 ## 3. Open checks — remaining
 1. ~~gemma-4 license acceptance~~ ✅ accepted by user (2026-08-20, confirmed in chat).
 2. **RAPID_API_KEY**: received from user 2026-08-20 — **handled as secret**: never written to repo/docs, stored as env var on the machine only (`export RAPID_API_KEY=...` in `~/.bashrc`); validity verified by the probe in `setup_machine.sh` §5b (records PASS/FAIL only, never the value).
@@ -60,4 +74,5 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — C.1: machine path /home/ubuntu/HandoffRepair, deploy key id_ed25519_ww3030, repo name corrected to Handoffrepair (clone error diagnosed: wrong repo name, not auth).
 - 2026-08-20 — B6–B8: SSH deploy key added (machine-side sync); gemma-4 license accepted; RAPID_API_KEY received (secret: env var only, probe logs pass/fail only). GitHub egress from sandbox blocked → push pending.
