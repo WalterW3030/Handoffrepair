@@ -117,6 +117,14 @@ docker run --rm --gpus '"device=0"' "$IMAGE" nvidia-smi \
   | tee "$EV/container_nvidia_smi.txt" \
   || stop "CUDA/driver mismatch — container cannot see GPU. Report back; options: cuda-compat or re-pin image (lock change)."
 
+echo "== [2b/5] HF token pre-check (vLLM pulls models from HF at serve time) =="
+if [ -z "${HF_TOKEN:-}" ]; then
+  stop "HF_TOKEN not set in this shell. vLLM containers download models from HF and need it.
+  Fix:  export HF_TOKEN=hf_...   (then re-run). gemma-4-31b is GATED — the token's account must have accepted its license."
+else
+  echo "HF_TOKEN is set (value not recorded)."
+fi
+
 echo "== [3/5] verify weights against configs/weight_sha256.lock =="
 "$PY" tools/hash_weights.py --root "$HF_HOME" --out "$EV/weight_hash_verify.yaml" \
   || stop "weight hash verification failed — do NOT proceed, see $EV/weight_hash_verify.yaml"
@@ -149,6 +157,10 @@ for key in "${KEYS[@]}"; do
     sleep 10
     if ! docker ps --format '{{.Names}}' | grep -qx "staging_$key"; then
       docker logs "staging_$key" > "$EV/serve_${key}.log" 2>&1 || true
+      # distinguish HF-auth failure from a real crash for an accurate STOP
+      if grep -qiE "authentication|unauthorized|401|403|gated|token" "$EV/serve_${key}.log"; then
+        stop "HF auth failed serving $key — see $EV/serve_${key}.log. Likely: HF_TOKEN unset/invalid, or the gated gemma-4 license not accepted for this token's account."
+      fi
       stop "server died for $key — see $EV/serve_${key}.log"
     fi
     mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
