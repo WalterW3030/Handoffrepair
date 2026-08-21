@@ -51,7 +51,7 @@ echo "python env: $PYBIN ($PYVER)" | tee python_env.txt
 
 echo "== [2/5] ToolSandbox @ pinned commit =="
 if [ ! -d ToolSandbox ]; then
-  git clone https://github.com/facebookresearch/ToolSandbox.git
+  git clone https://github.com/apple/ToolSandbox.git
 fi
 git -C ToolSandbox fetch --all --quiet
 git -C ToolSandbox checkout "$TS_COMMIT"

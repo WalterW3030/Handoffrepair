@@ -45,7 +45,7 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 ## 2. Version pins this machine must satisfy (from repo)
 | Component | Pin |
 |---|---|
-| ToolSandbox | commit 165848b9a78cead7ca7fe7c89c688b58e6501219 |
+| ToolSandbox | commit 165848b9a78cead7ca7fe7c89c688b58e6501219 from **`apple/ToolSandbox`** (upstream moved from `facebookresearch/ToolSandbox`, which now 404s; pinned commit verified present in apple repo 2026-08-20) |
 | vLLM image | vllm/vllm-openai@sha256:0a51ea5b…bfd967 (v0.27.1, CUDA 13.0.2 user-space, sm_90) |
 | Models | Qwen3-32B 9216db57 · Qwen3-8B b968826d · RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic f50dbad2 · google/gemma-4-31B-it 842da379 |
 | Weights | 39-file SHA-256 lock (`configs/weight_sha256.lock`) |
@@ -75,6 +75,7 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
 - 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
+- 2026-08-20 — ToolSandbox upstream URL fixed: facebookresearch/ToolSandbox 404s (moved); apple/ToolSandbox contains the pinned commit. setup_machine.sh corrected.
 - 2026-08-20 — push resolved: correct URL github.com/WalterW3030/Handoffrepair; all 9 commits now on GitHub, verified via API.
 - 2026-08-20 — C.1: machine path /home/ubuntu/HandoffRepair, deploy key id_ed25519_ww3030, repo name corrected to Handoffrepair (clone error diagnosed: wrong repo name, not auth).
 - 2026-08-20 — B6–B8: SSH deploy key added (machine-side sync); gemma-4 license accepted; RAPID_API_KEY received (secret: env var only, probe logs pass/fail only). GitHub egress from sandbox blocked → push pending.
