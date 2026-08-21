@@ -36,20 +36,24 @@ echo "evidence dir: $EV"
 
 stop () { echo "STOP: $1" | tee -a "$EV/STOP.txt"; exit 1; }
 
-echo "== [-1/5] docker daemon reachable? (rootless must be running first) =="
+echo "== [-1/5] docker daemon reachable? =="
+DOCKER_MODE="${DOCKER_MODE:-system}"
 if ! docker info >/dev/null 2>&1; then
-  echo "STOP: cannot reach docker daemon (DOCKER_HOST=${DOCKER_HOST:-<unset, default /var/run/docker.sock>})."
-  echo "  The rootless daemon is not running. Start it ONCE, persistent (survives shell exit):"
-  echo "    mkdir -p /ephemeral/hr/pilot/docker-rootless /ephemeral/hr/pilot/logs"
-  echo "    setsid bash -c 'rootlesskit --net=slirp4netns dockerd-rootless.sh \\"
-  echo "        --data-root /ephemeral/hr/pilot/docker-rootless \\"
-  echo "        --host unix:///run/user/\$(id -u)/docker.sock' \\"
-  echo "        > /ephemeral/hr/pilot/logs/dockerd.log 2>&1 < /dev/null &"
-  echo "    sleep 8 && export DOCKER_HOST=unix:///run/user/\$(id -u)/docker.sock && docker info --format '{{.DockerRootDir}}'"
-  echo "  Then re-run this script in the SAME shell (or after: source env.sh)."
+  if [ "$DOCKER_MODE" = rootless ]; then
+    echo "STOP: cannot reach ROOTLESS docker daemon (DOCKER_HOST=${DOCKER_HOST:-unset})."
+    echo "  Start it ONCE, persistent:"
+    echo "    mkdir -p /ephemeral/hr/pilot/docker-rootless /ephemeral/hr/pilot/logs"
+    echo "    setsid bash -c 'rootlesskit --net=slirp4netns dockerd-rootless.sh --data-root /ephemeral/hr/pilot/docker-rootless --host unix:///run/user/\$(id -u)/docker.sock' > /ephemeral/hr/pilot/logs/dockerd.log 2>&1 < /dev/null &"
+    echo "    sleep 8 && docker info --format '{{.DockerRootDir}}'"
+  else
+    echo "STOP: cannot reach SYSTEM docker (default socket). You're in the docker group, so:"
+    echo "  - if you relocated storage: sudo systemctl restart docker  (reported sudo use)"
+    echo "  - check: ls -l /var/run/docker.sock ; docker version"
+    echo "  - to use rootless instead: export DOCKER_MODE=rootless && source env.sh"
+  fi
   exit 1
 fi
-echo "docker daemon OK: $(docker info --format '{{.DockerRootDir}}')"
+echo "docker OK (mode=$DOCKER_MODE): $(docker info --format '{{.DockerRootDir}}')"
 
 echo "== [0/5] environment record =="
 {

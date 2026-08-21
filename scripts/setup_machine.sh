@@ -97,8 +97,15 @@ export HF_HOME="$HF_HOME"
 export PILOT_DATA="$PILOT_DATA"
 export CUDA_VISIBLE_DEVICES=0   # Rule R3: exactly 1 GPU, always
 export PILOT_PYTHON="$PYBIN"    # Rule R4: this interpreter only
-# Rootless docker (no sudo, R2): images live on /ephemeral (root / too small).
-export DOCKER_HOST="unix:///run/user/\$(id -u)/docker.sock"
+# Docker mode: "system" (default — you're in the docker group, storage relocated to
+# /ephemeral) or "rootless" (per-user daemon, socket in /run/user). Set DOCKER_MODE before
+# sourcing to override.
+export DOCKER_MODE="\${DOCKER_MODE:-system}"
+if [ "\$DOCKER_MODE" = rootless ]; then
+  export DOCKER_HOST="unix:///run/user/\$(id -u)/docker.sock"
+else
+  unset DOCKER_HOST   # system docker uses the default /var/run/docker.sock
+fi
 EOF
 # shellcheck disable=SC1091
 source env.sh
