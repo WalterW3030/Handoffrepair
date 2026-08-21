@@ -43,7 +43,7 @@ Rule R4: everything runs inside an isolated env — **either** the project venv 
 
 **Conda path (user's machine):**
 ```bash
-cd /ephemeral/$USER/Handoffrepair
+cd /ephemeral/hr/Handoffrepair
 conda create -n handoffrepair python=3.12 -y    # NOT 3.13 — see §1
 conda activate handoffrepair
 python -m pip install --upgrade pip

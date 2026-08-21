@@ -1,6 +1,6 @@
 # Execution Rules (always-on)
 
-Binding on every execution step of the HandoffRepair pilot, in this sandbox and on the GPU machine. R1–R3 set by the user 2026-08-20; R4–R6 added 2026-08-20. Companion file: `Machine Properties.md`.
+Binding on every execution step of the HandoffRepair pilot, in this sandbox and on the GPU machine. R1–R3 set by the user 2026-08-20; R4–R7 added 2026-08-20. Companion file: `Machine Properties.md`.
 
 ## R1 — Property awareness
 - Always be aware of the recorded machine properties (driver, CUDA, disks, versions) and of every package/model/container version pinned in the repo.
@@ -31,6 +31,12 @@ Binding on every execution step of the HandoffRepair pilot, in this sandbox and 
 ## R6 — History before asking
 - Before asking the user for any information, **first check the conversation history and the existing record files** (`AI manage AI/`, `docs/records/`, ledgers) — if it was already given, use it, never re-ask.
 - Every important piece of information the user provides gets **recorded into the appropriate file promptly** (machine facts → `Machine Properties.md`, approvals → ledger, decisions → records), so it is never lost between sessions.
+
+## R7 — Path errors: record, understand, update everywhere
+On any path-related error (permission denied, no space, not found, stale location):
+1. **Record it immediately** — the path, the error, and the root cause go into `Machine Properties.md` (change log) before fixing.
+2. **Understand before fixing** — identify the root cause (permissions? stale variable? full disk? moved dir?), not just the symptom. Verify against the actual filesystem facts, never guess (R1).
+3. **Update ALL related references** — every script, command, doc, and instruction that touches that path gets updated in the same pass, so no stale copy survives to fail again later. (Lesson: the `HF_HOME=/ephemeral/hf` failure happened because an old `env.sh` still carried the pre-move path while the scripts had moved on.)
 
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).

@@ -41,7 +41,7 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | Machine network | `huggingface.co` → **HTTP/2 200** ✅; `registry-1.docker.io` reachable ✅ (weight/image pulls possible machine-side) |
 
 ### Consequences (derived, binding for all planning)
-- **Everything large lives on `/ephemeral`**: HF cache (`HF_HOME=/ephemeral/$USER/hf`), repo clone, docker data if movable, all logs/evidence. Root `/` has 11 G free — the ~230 GB of weights + ~20 GB container image cannot touch `/`.
+- **Everything large lives on `/ephemeral`**: HF cache (`HF_HOME=$PILOT_DATA/hf`, canonical `/ephemeral/hr/pilot/hf`), repo clone, docker data if movable, all logs/evidence. Root `/` has 11 G free — the ~230 GB of weights + ~20 GB container image cannot touch `/`.
 - **429 G avail vs plan**: weights ≈230 G + vLLM image ≈20 G + logs/evidence ≈10 G ≈ 260 G → fits with ~170 G headroom. Tight but OK. `/ephemeral` is likely wiped on machine release (name suggests it) → evidence must be uploaded/exported after each phase.
 - Large RAM (≥700 G by tmpfs sizing) — host-side processing unconstrained.
 

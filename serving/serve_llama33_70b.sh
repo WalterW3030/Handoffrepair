@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 [ -f env.sh ] && source env.sh
 export CUDA_VISIBLE_DEVICES=0   # R3
 IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
-HF_HOME="${HF_HOME:-/ephemeral/$USER/hf}"
+HF_HOME="${HF_HOME:-${PILOT_DATA:-/ephemeral/hr/pilot}/hf}"
 PORT="${PORT:-8000}"
 exec docker run --rm --name serve_llama33_70b --gpus '"device=0"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
