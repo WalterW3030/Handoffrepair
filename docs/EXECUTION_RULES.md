@@ -1,6 +1,6 @@
 # Execution Rules (always-on)
 
-Binding on every execution step of the HandoffRepair pilot, in this sandbox and on the GPU machine. R1–R3 set by the user 2026-08-20; R4–R5 added 2026-08-20. Companion file: `Machine Properties.md`.
+Binding on every execution step of the HandoffRepair pilot, in this sandbox and on the GPU machine. R1–R3 set by the user 2026-08-20; R4–R6 added 2026-08-20. Companion file: `Machine Properties.md`.
 
 ## R1 — Property awareness
 - Always be aware of the recorded machine properties (driver, CUDA, disks, versions) and of every package/model/container version pinned in the repo.
@@ -27,6 +27,10 @@ Binding on every execution step of the HandoffRepair pilot, in this sandbox and 
 - **Never run commands that delete or overwrite files not created by this experiment** (no broad `rm -rf`, no cleanup of pre-existing directories, no touching other users' data, docker system prune, etc.).
 - **Never run commands that affect state outside the environment** (system services, kernel settings, other mounts, shared caches, network config).
 - If such a command appears genuinely necessary: **stop and ask the user for manual help**, presenting the exact command and its blast radius — never run it unilaterally.
+
+## R6 — History before asking
+- Before asking the user for any information, **first check the conversation history and the existing record files** (`AI manage AI/`, `docs/records/`, ledgers) — if it was already given, use it, never re-ask.
+- Every important piece of information the user provides gets **recorded into the appropriate file promptly** (machine facts → `Machine Properties.md`, approvals → ledger, decisions → records), so it is never lost between sessions.
 
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).

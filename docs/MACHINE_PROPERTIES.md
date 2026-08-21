@@ -23,6 +23,20 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | /dev/vdb | 6.3T | 5.6T | **429G** | 94% | **/ephemeral** (only big writable disk) |
 | tmpfs | 142G | 400K | 142G | 1% | /run/user/1000 |
 
+### GPU (from approval records — Day 0 Record 4 §remaining, Record 9 H1, Staging Approval Ledger)
+| Property | Value |
+|---|---|
+| Machine spec (approved) | **1× H100 SXM5 80GB**, ≥16 vCPU, ≥128GB RAM, ≥500GB NVMe |
+| vLLM arch target | sm_90 (H100) — matches pinned container's arch list |
+
+### Runtime environment (user-reported 2026-08-20, check answers A2–A5)
+| Property | Value |
+|---|---|
+| Conda env python | **3.12** ✅ (within required 3.10–3.12) |
+| Docker | Engine Community **29.1.3** (API 1.52, containerd 2.2.1, runc 1.3.4) — client+server respond **as user, no sudo** ✅ (docker group OK) |
+| DockerRootDir | `/var/lib/docker` — **>40 G free** (user-verified) ✅. Note: earlier `df` showed `/` at 11 G avail — so `/var/lib/docker` is on another mount or storage was expanded after approval; staging re-records `df` and will catch any discrepancy |
+| Machine network | `huggingface.co` → **HTTP/2 200** ✅; `registry-1.docker.io` reachable ✅ (weight/image pulls possible machine-side) |
+
 ### Consequences (derived, binding for all planning)
 - **Everything large lives on `/ephemeral`**: HF cache (`HF_HOME=/ephemeral/$USER/hf`), repo clone, docker data if movable, all logs/evidence. Root `/` has 11 G free — the ~230 GB of weights + ~20 GB container image cannot touch `/`.
 - **429 G avail vs plan**: weights ≈230 G + vLLM image ≈20 G + logs/evidence ≈10 G ≈ 260 G → fits with ~170 G headroom. Tight but OK. `/ephemeral` is likely wiped on machine release (name suggests it) → evidence must be uploaded/exported after each phase.
@@ -37,15 +51,14 @@ Source: user-provided command outputs, 2026-08-20. Per Execution Rule R1: anythi
 | Weights | 39-file SHA-256 lock (`configs/weight_sha256.lock`) |
 | Host python deps | per `scripts/setup_machine.sh` (polars==0.20.31, pydantic==2.7.4, openai==1.17.0, …) |
 
-## 3. Open checks — user, please run and paste back (no sudo needed)
-1. **GPU model & count**: full `nvidia-smi` output (the paste had only the header). Need: GPU name, memory per GPU, how many GPUs. All sizing assumed 1× ~80 GB (e.g. H100) — must confirm. Rule R3: we will use exactly one regardless.
-2. **Driver vs container CUDA**: pinned vLLM image is CUDA 13.0.2 user-space; driver 570.195.03 supports max CUDA 12.8. CUDA 13 normally wants driver ≥580; on datacenter GPUs the container's `cuda-compat` may bridge this, but it is **not guaranteed**. Definitive test (staging_collect.sh runs it first):
+## 3. Open checks — remaining
+All six original checks are now **answered** (recorded above). Remaining unverified items, in staging order:
+1. **Driver vs container CUDA**: pinned vLLM image is CUDA 13.0.2 user-space; driver 570.195.03 supports max CUDA 12.8. CUDA 13 normally wants driver ≥580; on datacenter GPUs the container's `cuda-compat` may bridge this, but it is **not guaranteed**. Definitive test (staging_collect.sh runs it first, auto-stops):
    `docker run --rm --gpus '"device=0"' <pinned vllm image> nvidia-smi`
    If that errors with a CUDA driver mismatch → STOP; we then decide between (a) cuda-compat, (b) re-pinning to a CUDA-12.8-based vLLM image (formal lock change).
-3. **Docker without sudo**: does `docker version` work as your user (i.e. are you in the `docker` group)? Per Rule R2 we will not sudo-install it. If not working, options: ask your admin to add you to the docker group, or rootless podman/docker with storage on /ephemeral.
-4. **Docker Root Dir + its free space**: `docker info --format '{{.DockerRootDir}}'` then `df -h` on that path. Needs ≥40 G free for the vLLM image. If it points at `/` (11 G free), per Rule R2 alternatives: set `XDG_DATA_HOME=/ephemeral/...` with rootless docker, or ask admin to relocate — not a silent sudo step.
-5. **Outbound network on the machine**: `curl -sI https://huggingface.co` and `curl -sI https://registry-1.docker.io` — confirms weight/image downloads are possible from the machine (they are blocked from this chat sandbox, which is why downloads happen on your side).
-6. **python3 version on host**: `python3 --version` (setup assumes ≥3.10).
+2. **gemma-4 license acceptance** on HuggingFace (user action, web).
+3. **RAPID_API_KEY** obtained and set on the machine (main run only).
 
 ## 4. Change log
 - 2026-08-20 — initial record from user paste; rules R1–R3 established.
+- 2026-08-20 — GPU spec recovered from approval records (H100 SXM5 80GB; rule R6 created from this miss); A2–A5 check answers recorded: conda py3.12, Docker CE 29.1.3 no-sudo OK, /var/lib/docker >40G free, HF+Docker Hub reachable.
