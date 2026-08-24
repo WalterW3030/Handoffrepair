@@ -15,7 +15,7 @@ exec docker run --rm --name serve_qwen3_32b --gpus '"device=0"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" -e CUDA_VISIBLE_DEVICES=0 ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
-  --model Qwen/Qwen3-32B \
+  Qwen/Qwen3-32B \
   --revision 9216db5781bf21249d130ec9da846c4624c16137 \
   --served-model-name qwen3-32b \
   --max-model-len 8192 --gpu-memory-utilization 0.95 --enforce-eager \

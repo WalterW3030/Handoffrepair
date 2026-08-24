@@ -45,6 +45,21 @@ When a log, evidence bundle, or error output is needed for checking, **don't pas
 - The repo `.gitignore` keeps `staging_evidence/` raw dirs and bulk tarballs out of git by default — copy the *specific* file needed into `evidence/`.
 - Applies to all future file-checking tasks, not just staging.
 
+## R9 — Evidence before theory; break loops by widening, not repeating
+Added 2026-08-22 after the qwen3-32b crash-loop failure (4 rounds, zero real logs, wrong OOM theory).
+- **Never assert a cause without evidence.** State it as a hypothesis with what would confirm/refute it. Do not present a guess as a diagnosis.
+- **On any error, search first** (web + the actual logs/data) for the *full* space of plausible causes — not just the first one that comes to mind. Rank them by evidence, not familiarity.
+- **If the same fix is tried twice and the problem persists, STOP repeating it.** That is a loop. Break it by (a) getting the missing evidence first, and (b) deliberately looking *outside* the current assumption (different component, different layer — e.g. config/arg/entrypoint, not just memory/model).
+- **Verify the evidence channel actually works before trusting it.** If a diagnostic file is supposed to contain the answer, confirm it is non-empty and non-stale *before* concluding anything from it. (We trusted a 65-byte "No such container" stub as if it were a real crash log — for 4 rounds.)
+- **When a hypothesis fails, say so explicitly, drop it, and record what the evidence actually shows** (e.g. `exit_code=1, oom_killed=false` ⇒ config/arg error, *not* OOM).
+
+## R10 — No over-promising; capture the signal at its source, not through a proxy
+Added 2026-08-22 after the same loop persisted post-R9 (user: "you kept looping on similar behavior… untrustworthy… never really break").
+- **No confident-but-unverified language.** Never say "this command gets the real error" / "one command to fix" / "must work now". State the hypothesis, the test, and what each outcome would mean. Report probability, not certainty.
+- **A diagnosis is only as good as its weakest capture step.** Before trusting any observation, trace the *full chain* that produced it (run → detect → capture → file → read). A failure anywhere in that chain can manufacture a plausible-looking artifact that is NOT the real signal. (Our "crash log" was actually the *error message of our own `docker logs` probe* — "No such container" — not the crash.)
+- **Capture output at the source, not through a removable proxy.** For a container/process that may die: redirect its stdout/stderr to a file *at launch* (or read the json-file log path via `docker inspect {{.LogPath}}`), never rely on a post-hoc read of an object that can disappear (a dead container, a removed name) before you read it.
+- **When the same symptom recurs, re-derive from first principles instead of re-applying the last fix.** Ask: what *mechanism* produces exactly this observation (this exit code + this empty log)? Enumerate ALL mechanisms that fit before choosing an action.
+
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.
