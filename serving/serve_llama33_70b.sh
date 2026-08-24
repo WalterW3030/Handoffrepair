@@ -14,7 +14,7 @@ exec docker run --rm --name serve_llama33_70b --gpus '"device=0"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" -e CUDA_VISIBLE_DEVICES=0 ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
-  --model RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic \
+  RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic \
   --revision f50dbad2c84590ca17dc51e207c34321b65ff14b \
   --served-model-name llama33-70b-fp8 \
   --max-model-len 8192 --gpu-memory-utilization 0.95 --enforce-eager \

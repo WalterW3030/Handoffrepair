@@ -18,7 +18,7 @@ exec docker run --rm --name serve_gemma4_31b --gpus '"device=0"' \
   -v "$PWD/examples:/templates:ro" \
   -p "$PORT:8000" -e CUDA_VISIBLE_DEVICES=0 ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
-  --model google/gemma-4-31B-it \
+  google/gemma-4-31B-it \
   --revision 842da3794eaa0b77d5f08bae87a17459d91ff475 \
   --served-model-name gemma4-31b \
   --max-model-len 8192 --gpu-memory-utilization 0.95 --enforce-eager \

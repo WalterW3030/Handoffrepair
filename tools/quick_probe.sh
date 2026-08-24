@@ -56,7 +56,7 @@ docker run -d --name "$NAME" --gpus '"device=0"' \
   -e CUDA_VISIBLE_DEVICES=0 \
   ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
-  --model "$MODEL" --served-model-name "$KEY" \
+  "$MODEL" --served-model-name "$KEY" \
   --max-model-len 8192 --gpu-memory-utilization "$MEMUTIL" --enforce-eager \
   > /dev/null || { echo "STOP: docker run failed (see 'docker ps -a')"; exit 1; }
 

@@ -161,7 +161,7 @@ for key in "${KEYS[@]}"; do
     -e CUDA_VISIBLE_DEVICES=0 \
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
-    --model "$model" --served-model-name "$key" \
+    "$model" --served-model-name "$key" \
     --max-model-len 8192 --gpu-memory-utilization 0.90 --enforce-eager \
     > /dev/null || stop "docker run failed for $key"
 
