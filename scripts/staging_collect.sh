@@ -123,9 +123,16 @@ echo "== [2b/5] HF token pre-check (vLLM pulls models from HF at serve time) =="
 if [ -z "${HF_TOKEN:-}" ]; then
   stop "HF_TOKEN not set in this shell. vLLM containers download models from HF and need it.
   Fix:  export HF_TOKEN=hf_...   (then re-run). gemma-4-31b is GATED — the token's account must have accepted its license."
-else
-  echo "HF_TOKEN is set (value not recorded)."
 fi
+# 2026-08-28 incident: a polluted HF_TOKEN (CJK/full-width chars from copy-paste)
+# caused httpx UnicodeEncodeError deep in metadata fetch → exit 1. Catch it here.
+if printf '%s' "$HF_TOKEN" | LC_ALL=C grep -qP '[^\x00-\x7F]'; then
+  stop "HF_TOKEN contains NON-ASCII characters (likely CJK/full-width chars from copy-paste).
+  vLLM will crash with UnicodeEncodeError when sending the Authorization header.
+  Fix: re-export with a clean ASCII token, then verify:
+    printf '%s' \"\$HF_TOKEN\" | LC_ALL=C grep -qP '[^\\x00-\\x7F]' && echo BAD || echo CLEAN"
+fi
+echo "HF_TOKEN is set and ASCII-clean (value not recorded)."
 
 echo "== [3/5] verify weights against configs/weight_sha256.lock =="
 "$PY" tools/hash_weights.py --root "$HF_HOME" --out "$EV/weight_hash_verify.yaml" \
