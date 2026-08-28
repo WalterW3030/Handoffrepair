@@ -64,6 +64,20 @@ fi
 # --- pre-clean any stale container of this name ------------------------------
 docker rm -f "$NAME" > /dev/null 2>&1 || true
 
+# HF token: never stored on disk/git (user decision 2026-08-28). Prompt if unset
+# or polluted with non-ASCII chars; lives only in this process env.
+hf_token_clean() { [ -n "${HF_TOKEN:-}" ] && ! printf '%s' "$HF_TOKEN" | LC_ALL=C grep -qP '[^\x00-\x7F]'; }
+if ! hf_token_clean && [ -t 0 ]; then
+  [ -n "${HF_TOKEN:-}" ] && echo "HF_TOKEN set but contains non-ASCII chars — re-enter." || echo "HF_TOKEN not set."
+  tries=0
+  until hf_token_clean; do
+    tries=$((tries+1)); [ "$tries" -le 3 ] || { echo "STOP: HF_TOKEN still invalid after 3 attempts"; exit 1; }
+    read -rsp "Enter HF_TOKEN (input hidden): " HF_TOKEN; echo
+    export HF_TOKEN
+    hf_token_clean || echo "  rejected: empty or non-ASCII chars — re-enter carefully."
+  done
+fi
+
 # --- launch (no --rm so a crash keeps its logs; --ipc=host is required) ------
 # --gpus device=$GPU_ID alone isolates to that GPU; no CUDA_VISIBLE_DEVICES.
 docker run -d --name "$NAME" --gpus "\"device=$GPU_ID\"" \

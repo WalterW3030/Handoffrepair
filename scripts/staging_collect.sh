@@ -120,17 +120,27 @@ docker run --rm --gpus '"device=0"' --entrypoint nvidia-smi "$IMAGE" \
   || stop "CUDA/driver mismatch — container cannot see GPU. Report back; options: cuda-compat or re-pin image (lock change)."
 
 echo "== [2b/5] HF token pre-check (vLLM pulls models from HF at serve time) =="
-if [ -z "${HF_TOKEN:-}" ]; then
-  stop "HF_TOKEN not set in this shell. vLLM containers download models from HF and need it.
-  Fix:  export HF_TOKEN=hf_...   (then re-run). gemma-4-31b is GATED — the token's account must have accepted its license."
-fi
-# 2026-08-28 incident: a polluted HF_TOKEN (CJK/full-width chars from copy-paste)
-# caused httpx UnicodeEncodeError deep in metadata fetch → exit 1. Catch it here.
-if printf '%s' "$HF_TOKEN" | LC_ALL=C grep -qP '[^\x00-\x7F]'; then
-  stop "HF_TOKEN contains NON-ASCII characters (likely CJK/full-width chars from copy-paste).
-  vLLM will crash with UnicodeEncodeError when sending the Authorization header.
-  Fix: re-export with a clean ASCII token, then verify:
-    printf '%s' \"\$HF_TOKEN\" | LC_ALL=C grep -qP '[^\\x00-\\x7F]' && echo BAD || echo CLEAN"
+# Token is NEVER stored on disk or in git (user decision 2026-08-28): if unset or
+# polluted, prompt interactively (read -s, no echo). Lives only in this process env.
+hf_token_clean() { [ -n "${HF_TOKEN:-}" ] && ! printf '%s' "$HF_TOKEN" | LC_ALL=C grep -qP '[^\x00-\x7F]'; }
+if ! hf_token_clean; then
+  if [ -n "${HF_TOKEN:-}" ]; then
+    echo "HF_TOKEN is set but contains NON-ASCII characters (CJK/full-width from copy-paste) —"
+    echo "vLLM would crash with UnicodeEncodeError in the Authorization header."
+  else
+    echo "HF_TOKEN not set. gemma-4-31b is GATED — a valid token is required."
+  fi
+  if [ -t 0 ]; then
+    tries=0
+    until hf_token_clean; do
+      tries=$((tries+1)); [ "$tries" -le 3 ] || stop "HF_TOKEN still invalid after 3 attempts."
+      read -rsp "Enter HF_TOKEN (input hidden): " HF_TOKEN; echo
+      export HF_TOKEN
+      hf_token_clean || echo "  rejected: empty or contains non-ASCII chars — re-enter carefully."
+    done
+  else
+    stop "HF_TOKEN missing/invalid and no TTY to prompt. Run: export HF_TOKEN=hf_... (clean ASCII) then re-run."
+  fi
 fi
 echo "HF_TOKEN is set and ASCII-clean (value not recorded)."
 
