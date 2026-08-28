@@ -188,6 +188,7 @@ for key in "${KEYS[@]}"; do
   # NOT also set CUDA_VISIBLE_DEVICES (can confuse device mapping).
   docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \
     --ipc=host \
+    -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \
     -v "$HF_HOME:/root/.cache/huggingface" \
     -p "$PORT:8000" \
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \

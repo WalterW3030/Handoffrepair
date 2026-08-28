@@ -16,6 +16,8 @@ PORT="${PORT:-8000}"
 exec docker run --rm --name serve_qwen3_32b --gpus '"'"device=$GPU_ID"'"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+  --ipc=host \
+  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \  # driver R570 (CUDA≤12.8) vs image CUDA 13.0.2
   "$IMAGE" \
   Qwen/Qwen3-32B \
   --revision 9216db5781bf21249d130ec9da846c4624c16137 \

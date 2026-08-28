@@ -15,6 +15,8 @@ PORT="${PORT:-8000}"
 exec docker run --rm --name serve_llama33_70b --gpus '"'"device=$GPU_ID"'"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+  --ipc=host \
+  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \  # driver R570 (CUDA≤12.8) vs image CUDA 13.0.2
   "$IMAGE" \
   RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic \
   --revision f50dbad2c84590ca17dc51e207c34321b65ff14b \

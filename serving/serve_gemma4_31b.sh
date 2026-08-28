@@ -19,6 +19,8 @@ exec docker run --rm --name serve_gemma4_31b --gpus '"'"device=$GPU_ID"'"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -v "$PWD/examples:/templates:ro" \
   -p "$PORT:8000" ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+  --ipc=host \
+  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \  # driver R570 (CUDA≤12.8) vs image CUDA 13.0.2
   "$IMAGE" \
   google/gemma-4-31B-it \
   --revision 842da3794eaa0b77d5f08bae87a17459d91ff475 \
