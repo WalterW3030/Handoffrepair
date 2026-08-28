@@ -61,6 +61,19 @@ Added 2026-08-22 after the same loop persisted post-R9 (user: "you kept looping 
 - **Capture output at the source, not through a removable proxy.** For a container/process that may die: redirect its stdout/stderr to a file *at launch* (or read the json-file log path via `docker inspect {{.LogPath}}`), never rely on a post-hoc read of an object that can disappear (a dead container, a removed name) before you read it.
 - **When the same symptom recurs, re-derive from first principles instead of re-applying the last fix.** Ask: what *mechanism* produces exactly this observation (this exit code + this empty log)? Enumerate ALL mechanisms that fit before choosing an action.
 
+## R11 — Estimate runtime; long commands go to tmux background
+Added 2026-08-28 per user instruction.
+- **Before giving the user any command, estimate its expected running time.** If it is expected to take **> 10 minutes** (model downloads, weight loads, staging, main runs), **say so explicitly and provide the tmux form** so the user can run it in the background and disconnect safely.
+- Standard pattern for long commands:
+  ```bash
+  tmux new -s <name>        # run inside, detach with Ctrl+B then D
+  tmux attach -t <name>     # reattach later to check
+  # or fully detached:
+  tmux new -d -s <name> 'bash <script> 2>&1 | tee <logfile>'
+  tmux capture-pane -t <name> -p | tail -30   # check progress without attaching
+  ```
+- Always pair a long command with a way to check progress later (log file path or tmux capture command).
+
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.
