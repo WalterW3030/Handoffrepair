@@ -11,10 +11,11 @@ Binding on every execution step of the HandoffRepair pilot, in this sandbox and 
 - If sudo is genuinely necessary: present the exact minimal command to the user — **the user runs it themselves**.
 - **Every necessary sudo use must be reported**: logged in `Machine Properties.md` change log with the command and why it was necessary. (Report #1: `sudo mkdir -p /ephemeral/hr`, 2026-08-20 — no user-writable dir existed on the only big disk.)
 
-## R3 — Exactly 1 GPU
-- All commands, scripts, and configs use exactly one GPU: `CUDA_VISIBLE_DEVICES=0` and/or `docker run --gpus '"device=0"'`.
-- No tensor/pipeline parallelism, no multi-GPU flags (`--tensor-parallel-size` stays 1, vLLM default), no code that enumerates or splits across GPUs.
-- Memory sizing must fit one GPU; if a model does not fit one GPU, that's a STOP, not a reason to span GPUs.
+## R3 — Exactly 1 GPU (amended 2026-08-28: always check availability first)
+- All commands, scripts, and configs use exactly one GPU — never multi-GPU, no tensor/pipeline parallelism, no code that enumerates or splits across GPUs.
+- **Before every GPU run, check which GPU is actually free**: `nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv`. This is a **shared 8-GPU machine** — another tenant's process held ~33 GiB on cuda:0 and killed our staging (real traceback 2026-08-28). Never hardcode device 0.
+- Use the freest GPU (scripts auto-select it; override with `GPU_ID=n`). As of 2026-08-28, GPUs **5, 6, 7 are free** (user-reported) — but re-check every time; occupancy changes on a shared machine.
+- Memory sizing must fit one GPU; if no single GPU has enough free memory, that's a STOP — wait or report, never span GPUs.
 
 ## R4 — Always a virtual environment
 - All Python execution (setup, staging, dry-run, main run, analysis) happens inside an isolated environment, never against the system Python and never with `--user` installs.
