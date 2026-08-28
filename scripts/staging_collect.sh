@@ -3,13 +3,13 @@
 # all evidence into one tarball to upload back for verification.
 # Auto-STOPs (exit 1) on: container digest mismatch, CUDA/driver mismatch,
 # weight hash mismatch, server crash, or health timeout.
-# Rules: R2 no sudo · R3 exactly 1 GPU (--gpus '"device=0"' + CUDA_VISIBLE_DEVICES=0).
+# Rules: R2 no sudo · R3 exactly 1 GPU (freest GPU auto-selected, overridable via GPU_ID).
 # Run from the repo root after setup_machine.sh.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck disable=SC1091
 [ -f env.sh ] && source env.sh
-export CUDA_VISIBLE_DEVICES=0   # Rule R3
+# Rule R3: exactly one GPU — selected below by free memory (GPU_ID), NOT hardcoded to device 0 (shared machine).
 PY="${PILOT_PYTHON:-}"          # Rule R4: interpreter chosen by setup (conda env or .venv)
 if [ -z "$PY" ]; then
   if [ -n "${CONDA_PREFIX:-}" ]; then PY="$(which python)"
@@ -139,12 +139,27 @@ declare -A MODELS=(
   [llama33-70b-fp8]="RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic"
   [gemma4-31b]="google/gemma-4-31B-it"
 )
+
+# GPU selection (R3: exactly ONE GPU, but NOT necessarily device 0 — this is a
+# shared 8-GPU machine; 2026-08-28 evidence: another process held ~33 GiB on
+# cuda:0, causing ValueError "free memory < desired utilization" at startup).
+# Pick the GPU with the most FREE memory unless GPU_ID is pinned by the user.
+pick_gpu() {
+  nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits \
+    | sort -t, -k2 -n | head -1 | awk -F, '{gsub(/ /,"",$1); print $1}'
+}
+GPU_ID="${GPU_ID:-$(pick_gpu)}"
+FREE_MIB=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i "$GPU_ID" | head -1)
+echo "selected GPU $GPU_ID (free ${FREE_MIB} MiB; override with GPU_ID=n)"
+# Pre-flight: refuse to launch if the chosen GPU can't satisfy 0.90 util of a ~79 GiB card.
+[ "$FREE_MIB" -ge 73000 ] || stop "GPU $GPU_ID has only ${FREE_MIB} MiB free (<73 GiB needed for gpu-memory-utilization 0.90). Another tenant/process is on it — check nvidia-smi, pick another GPU_ID, or wait."
+
 PORT=18080
 : > "$EV/peak_memory.txt"
 mkdir -p "$EV/cids"
 for key in "${KEYS[@]}"; do
   model="${MODELS[$key]}"
-  echo "--- $key ($model) on port $PORT, GPU 0 only"
+  echo "--- $key ($model) on port $PORT, GPU $GPU_ID only"
   # NOTE: no --rm. A dead container with --rm is auto-removed, losing its logs.
   # Use --cidfile + explicit capture + `docker rm` after, so we keep the real error.
   # Remove any stale container of this name first: a previous STOP aborts before
@@ -152,13 +167,12 @@ for key in "${KEYS[@]}"; do
   docker rm -f "staging_$key" > /dev/null 2>&1 || true
   cidfile="$EV/cids/$key"
   # --ipc=host is REQUIRED by the vLLM OpenAI image (PyTorch uses shared memory
-  # for worker IPC). Without it the engine can die at startup on ANY model with
-  # almost no log — a likely culprit here, NOT necessarily OOM.
-  docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus '"device=0"' \
+  # for worker IPC). --gpus device=$GPU_ID alone isolates to that one GPU; do
+  # NOT also set CUDA_VISIBLE_DEVICES (can confuse device mapping).
+  docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \
     --ipc=host \
     -v "$HF_HOME:/root/.cache/huggingface" \
     -p "$PORT:8000" \
-    -e CUDA_VISIBLE_DEVICES=0 \
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
     "$model" --served-model-name "$key" \
@@ -186,7 +200,7 @@ for key in "${KEYS[@]}"; do
       fi
       stop "server died for $key — see $EV/serve_${key}.log and $EV/diag_${key}.txt (exit_code/oom_killed)"
     fi
-    mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
+    mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i "$GPU_ID")
     [ "$mem" -gt "$peak" ] && peak=$mem
     if curl -sf "http://localhost:$PORT/health" > /dev/null 2>&1; then ready=1; break; fi
   done
@@ -210,7 +224,7 @@ for key in "${KEYS[@]}"; do
   fi
 
   sleep 5
-  mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
+  mem=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i "$GPU_ID")
   [ "$mem" -gt "$peak" ] && peak=$mem
   echo "$key peak_mib=$peak" | tee -a "$EV/peak_memory.txt"
   docker stop "staging_$key" > /dev/null 2>&1 || true

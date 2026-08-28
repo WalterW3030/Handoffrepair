@@ -45,15 +45,31 @@ NAME="qp_$KEY"
 echo "== quick_probe: $KEY ($MODEL)  gpu-mem-util=$MEMUTIL  port=$PORT =="
 echo "   image: $IMAGE"
 
+# GPU selection (2026-08-28 evidence: cuda:0 was 33 GiB occupied by another
+# process → ValueError "free memory < desired utilization", exit 1). Pick the
+# freest GPU unless GPU_ID is pinned.
+pick_gpu() {
+  nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits \
+    | sort -t, -k2 -n | head -1 | awk -F, '{gsub(/ /,"",$1); print $1}'
+}
+GPU_ID="${GPU_ID:-$(pick_gpu)}"
+FREE_MIB=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i "$GPU_ID" | head -1)
+echo "   selected GPU $GPU_ID (free ${FREE_MIB} MiB; override with GPU_ID=n)"
+if [ "$FREE_MIB" -lt 73000 ]; then
+  echo "STOP: GPU $GPU_ID has only ${FREE_MIB} MiB free (<73 GiB needed at util $MEMUTIL)."
+  echo "      Another process/tenant holds it — check nvidia-smi and retry (GPU_ID=n bash tools/quick_probe.sh $KEY)."
+  exit 1
+fi
+
 # --- pre-clean any stale container of this name ------------------------------
 docker rm -f "$NAME" > /dev/null 2>&1 || true
 
 # --- launch (no --rm so a crash keeps its logs; --ipc=host is required) ------
-docker run -d --name "$NAME" --gpus '"device=0"' \
+# --gpus device=$GPU_ID alone isolates to that GPU; no CUDA_VISIBLE_DEVICES.
+docker run -d --name "$NAME" --gpus "\"device=$GPU_ID\"" \
   --ipc=host \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" \
-  -e CUDA_VISIBLE_DEVICES=0 \
   ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
   "$MODEL" --served-model-name "$KEY" \
@@ -64,7 +80,7 @@ echo "   launched container $NAME — watching for health or death (up to 20 min
 
 # --- GPU memory timeline (background) ----------------------------------------
 ( for _ in $(seq 1 120); do
-    echo "$(date +%H:%M:%S) $(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1) MiB"
+    echo "$(date +%H:%M:%S) $(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i "$GPU_ID") MiB"
     sleep 10
   done ) > "$OUT/nvidia_smi.txt" 2>/dev/null &
 SMI_PID=$!
