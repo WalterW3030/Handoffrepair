@@ -80,6 +80,13 @@ Added 2026-08-28 per user instruction.
   ```
 - Always pair a long command with a way to check progress later (log file path or tmux capture command).
 
+## R12 — Compare alternatives on experiment criteria before choosing; check the whole plan's machine cost with headroom
+Added 2026-08-28 per user instruction (after llama-70b-fp8 didn't fit at any usable context length).
+- **Before choosing between design options** (model swap, context-length change, util change), produce a **comparison on the criteria that matter to the experiment** (task capability, tool-calling, reasoning depth, context fit, license/access, precision) — including the **consequence of each option on experiment validity** — then recommend. Never present a single option as the answer.
+- **Never size to the machine's limit.** When estimating GPU memory, context length, or any resource: use the model's **actual spec sheet** (params, dtype, layers, KV-head count, attention type) to compute cost, then **require ≥ 10–15% free headroom** after weights + KV cache + activation margin. A config that fits only at 95%+ utilization is a failed design, not a tight one.
+- **Check the ENTIRE plan, not one model.** Before finalizing any serving/staging/main-run config, compute the cost for **every** model/pair in the pilot AND any follow-on phases (held-out eval, Day-2 audit, main run) against the recorded machine spec — one model fitting does not imply the plan fits.
+- Record the comparison and the headroom math in `Machine Properties.md` before implementing the chosen option.
+
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.
