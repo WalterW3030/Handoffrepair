@@ -25,7 +25,7 @@ exec docker run --rm --name serve_gemma4_31b --gpus '"'"device=$GPU_ID"'"' \
   google/gemma-4-31B-it \
   --revision 842da3794eaa0b77d5f08bae87a17459d91ff475 \
   --served-model-name gemma4-31b \
-  --max-model-len 8192 --gpu-memory-utilization 0.90 --enforce-eager \
+  --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager \
   --enable-auto-tool-choice --tool-call-parser gemma4 \
   --reasoning-parser gemma4 \
   --chat-template /templates/tool_chat_template_gemma4.jinja

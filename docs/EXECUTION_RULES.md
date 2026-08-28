@@ -87,6 +87,13 @@ Added 2026-08-28 per user instruction (after llama-70b-fp8 didn't fit at any usa
 - **Check the ENTIRE plan, not one model.** Before finalizing any serving/staging/main-run config, compute the cost for **every** model/pair in the pilot AND any follow-on phases (held-out eval, Day-2 audit, main run) against the recorded machine spec — one model fitting does not imply the plan fits.
 - Record the comparison and the headroom math in `Machine Properties.md` before implementing the chosen option.
 
+## R13 — Full parameter & workload analysis at DESIGN time, before any machine run
+Added 2026-08-28 per user instruction (after context-length and model-fit failures surfaced mid-staging, not at design).
+- **At experiment DESIGN time (before any GPU/staging run), analyze EVERY model and EVERY parameter that significantly affects performance or validity** — grounded in researched data (benchmark papers, model cards, spec sheets), not assumptions.
+- This includes, minimum: context-length requirement from the *benchmark's actual trajectory lengths*; per-model memory (weights+KV+activation from real specs); tool-calling/reasoning capability per model; decoding parameters (temperature, max_tokens, penalties); and the workload's token/turn profile.
+- **Record the analysis and the resulting parameter choices in the repo BEFORE implementing**, so choices are justified by data and auditable.
+- The trigger for this rule is the *design* step — never let a parameter reach staging untested-by-analysis. (We let max_model_len=8192 and a 70B model reach staging without checking ToolSandbox's real ~11.6k-token episodes or the 70B's memory fit. Both failed. This rule exists because of that.)
+
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.

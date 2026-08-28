@@ -124,3 +124,24 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - 2026-08-28 — added tools/push_latest_evidence.sh: auto-finds newest staging_evidence dir, copies all logs to evidence/, pull+commit+push in one command.
 - 2026-08-28 — R12 added (user instruction): (a) always compare alternatives on experiment-relevant criteria (incl. consequence on experiment validity) before choosing; (b) never size to machine limit — compute cost from actual model spec (params/dtype/layers/KV heads/attention type) and require ≥10% free headroom; (c) check the ENTIRE pilot + follow-on plan's machine cost, not one model.
 - 2026-08-28 — FULL pilot resource audit (79.19 GiB/GPU, util 0.90, act margin 1.5 GiB, from specs+logs): qwen3-32b free 13.8G OK · qwen3-8b free 60.6G OK · gemma4-31b free 14.3G OK (hybrid sliding+global attention → small KV) · **llama33-70b-fp8 free only 5.2G @8192 / 6.4G @4096 — BELOW the 7.9G (10%) headroom floor at ANY usable context**. Raising util to 0.95 does NOT help (vLLM util caps its own claim, but the physical card total is fixed; 70G weights + KV + act ≈ 74G regardless). Conclusion: llama-70b-fp8 is fundamentally too big for a single 80GB card under R12 headroom — must swap to a smaller model, not tune flags.
+
+## 2026-08-28 — Pair-2 model swap + design-time audit fixes (R13)
+- calibrated_pair_2 large slot: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic →
+  Qwen/Qwen3-30B-A3B-Instruct-2507 (MoE 30.5B/3.3B-active, bf16 ~57 GiB, 4 KV heads,
+  native 262144 ctx, Apache-2.0, hermes parser). Root cause of swap: llama FP8 ~70 GiB
+  weights left only 1.04 GiB KV at util 0.90 → ValueError even at ctx 8192; violates R12.
+- Context length decision (R13 audit vs ToolSandbox paper: avg 13.9 turns/episode,
+  30-turn cap → avg episode ~11.6k tokens, max ~20.6k): all launchers 8192 → 16384.
+  16384 = minimum valid ctx; episodes >16k documented as accepted truncation limitation.
+- decoding.yaml: tool parser llama3_json → hermes for the new model;
+  gpu_memory_utilization 0.92 → 0.90 (now consistent with all launchers).
+- weight_sha256.lock: llama entry replaced by Qwen3-30B-A3B entry marked
+  TO_PIN_AT_FIRST_STAGING (HF unreachable from sandbox; pin procedure documented
+  in the lock file itself). staging_collect.sh/quick_probe.sh MODELS maps swapped.
+- staging_collect.sh bugfix: auth-detector grep no longer matches bare "token"
+  (false "HF auth failed" STOP on the llama KV ValueError, 2026-08-28).
+- serve_llama33_70b.sh → serve_qwen3_30b_a3b.sh (git mv); revision via
+  QWEN3_30B_A3B_REV env, TO_PIN until first download.
+- Resource audit @16384, util 0.90, 79.19 GiB card (need ≥7.9 GiB free headroom):
+  qwen3-32b +11.79G OK; qwen3-8b +59.44G OK; Qwen3-30B-A3B +16.19G OK;
+  gemma4-31b +13.66G OK. All four pass R12.

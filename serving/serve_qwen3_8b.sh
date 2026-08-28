@@ -21,5 +21,5 @@ exec docker run --rm --name serve_qwen3_8b --gpus '"'"device=$GPU_ID"'"' \
   Qwen/Qwen3-8B \
   --revision b968826d9c46dd6066d109eabc6255188de91218 \
   --served-model-name qwen3-8b \
-  --max-model-len 8192 --gpu-memory-utilization 0.90 --enforce-eager \
+  --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager \
   --enable-auto-tool-choice --tool-call-parser hermes

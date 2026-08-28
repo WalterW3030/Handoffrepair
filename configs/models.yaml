@@ -13,14 +13,18 @@ calibrated_pair_1:
            precision: fp16, quantization: none,
            sha256: "configs/weight_sha256.lock#Qwen/Qwen3-8B", gated: false, license: apache-2.0}
 calibrated_pair_2:
-  source: {hf_id: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic,
-           revision: "f50dbad2c84590ca17dc51e207c34321b65ff14b",
-           precision: fp8_e4m3_dynamic,
-           quantization: "prequantized checkpoint (llm-compressor, per-tensor dynamic); pinned, no recipe",
-           sha256: "configs/weight_sha256.lock#RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic",
-           gated: false, license: llama3.3}
-           # NOTE: the RedHatAI repo itself is NOT gated (verified via Hub API 2026-08-15);
-           # the user's Meta Llama-3.3 license acceptance is on record regardless.
+  # REPLACED 2026-08-28 (user decision): Llama-3.3-70B-Instruct-FP8-dynamic -> Qwen3-30B-A3B-Instruct-2507.
+  # Reason (R12/R13 analysis): 70B FP8 (~70 GiB) + KV + activation on a single 79.19 GiB H100 leaves
+  # only ~6 GiB free at ctx=16384 — BELOW the 10% headroom floor at ANY usable context length.
+  # Qwen3-30B-A3B (MoE, 48L/4KV heads, 3.3B active) fits with +16.2 GiB headroom AND is a strong
+  # tool-caller (Qwen-Agent/hermes parser). Instruct-2507 branch chosen over the original for its
+  # 256K native context and better instruction-following/tool-use (Qwen model card, Jul 2025).
+  source: {hf_id: Qwen/Qwen3-30B-A3B-Instruct-2507,
+           revision: "TO_PIN",               # pin at staging: hf API revision + per-file sha256
+           precision: bf16, quantization: none,
+           sha256: "configs/weight_sha256.lock#Qwen/Qwen3-30B-A3B-Instruct-2507",
+           gated: false, license: apache-2.0,
+           tool_calling: "hermes parser (Qwen3 chat template has native Hermes-style tool support)"}
   target: {hf_id: Qwen/Qwen3-32B, revision: "9216db5781bf21249d130ec9da846c4624c16137",
            precision: fp8, quantization: "vllm --quantization fp8 (dynamic)",
            sha256: "configs/weight_sha256.lock#Qwen/Qwen3-32B", gated: false, license: apache-2.0}

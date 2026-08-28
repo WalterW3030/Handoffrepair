@@ -5,7 +5,7 @@
 #
 # Usage:
 #   bash tools/quick_probe.sh [model_key] [gpu_mem_util]
-#     model_key     one of: qwen3-32b | qwen3-8b | llama33-70b-fp8 | gemma4-31b
+#     model_key     one of: qwen3-32b | qwen3-8b | qwen3-30b-a3b | gemma4-31b
 #                   (default: qwen3-32b)
 #     gpu_mem_util  vLLM --gpu-memory-utilization (default: 0.90)
 #
@@ -32,7 +32,7 @@ MEMUTIL="${2:-0.90}"
 declare -A MODELS=(
   [qwen3-32b]="Qwen/Qwen3-32B"
   [qwen3-8b]="Qwen/Qwen3-8B"
-  [llama33-70b-fp8]="RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic"
+  [qwen3-30b-a3b]="Qwen/Qwen3-30B-A3B-Instruct-2507"
   [gemma4-31b]="google/gemma-4-31B-it"
 )
 MODEL="${MODELS[$KEY]:-}"
@@ -88,7 +88,7 @@ docker run -d --name "$NAME" --gpus "\"device=$GPU_ID\"" \
   ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
   "$MODEL" --served-model-name "$KEY" \
-  --max-model-len 8192 --gpu-memory-utilization "$MEMUTIL" --enforce-eager \
+  --max-model-len 16384 --gpu-memory-utilization "$MEMUTIL" --enforce-eager \
   > /dev/null || { echo "STOP: docker run failed (see 'docker ps -a')"; exit 1; }
 
 echo "   launched container $NAME — watching for health or death (up to 20 min)..."

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # serve_qwen3_32b.sh — Qwen3-32B via the digest-pinned vLLM container, one GPU, freest auto-selected (R3).
 # Rewritten 2026-08-20 (see serve_qwen3_8b.sh header). Full-precision weights are the pinned
-# lock contents (~64GB bf16); on an 80GB GPU keep max-model-len 8192 (staging pin).
+# lock contents (~64GB bf16); ctx 16384 = validated minimum for ToolSandbox (avg episode ~11.6k tok; R13 audit 2026-08-28: +11.8 GiB headroom at util 0.90).
 # If precision is ever changed, it MUST be re-locked in configs/weight_sha256.lock first.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -22,5 +22,5 @@ exec docker run --rm --name serve_qwen3_32b --gpus '"'"device=$GPU_ID"'"' \
   Qwen/Qwen3-32B \
   --revision 9216db5781bf21249d130ec9da846c4624c16137 \
   --served-model-name qwen3-32b \
-  --max-model-len 8192 --gpu-memory-utilization 0.90 --enforce-eager \
+  --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager \
   --enable-auto-tool-choice --tool-call-parser hermes

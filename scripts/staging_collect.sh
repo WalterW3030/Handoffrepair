@@ -149,11 +149,14 @@ echo "== [3/5] verify weights against configs/weight_sha256.lock =="
   || stop "weight hash verification failed — do NOT proceed, see $EV/weight_hash_verify.yaml"
 
 echo "== [4/5] per-model launch smoke + peak memory + probes (1 GPU each) =="
-KEYS=(qwen3-32b qwen3-8b llama33-70b-fp8 gemma4-31b)
+KEYS=(qwen3-32b qwen3-8b qwen3-30b-a3b gemma4-31b)
 declare -A MODELS=(
   [qwen3-32b]="Qwen/Qwen3-32B"
   [qwen3-8b]="Qwen/Qwen3-8B"
-  [llama33-70b-fp8]="RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic"
+  # 2026-08-28: pair-2 large slot = Qwen3-30B-A3B-Instruct-2507 (MoE 3.3B active),
+  # replacing Llama-3.3-70B-FP8 which could not fit one 79.19 GiB card with
+  # R12 headroom at a valid context length (KV ValueError at 8192).
+  [qwen3-30b-a3b]="Qwen/Qwen3-30B-A3B-Instruct-2507"
   [gemma4-31b]="google/gemma-4-31B-it"
 )
 
@@ -194,7 +197,7 @@ for key in "${KEYS[@]}"; do
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
     "$model" --served-model-name "$key" \
-    --max-model-len 8192 --gpu-memory-utilization 0.90 --enforce-eager \
+    --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager \
     > /dev/null || stop "docker run failed for $key"
 
   # Always capture logs + exit code + OOMKilled, even if the container dies
@@ -212,8 +215,11 @@ for key in "${KEYS[@]}"; do
     sleep 10
     if ! docker ps --format '{{.Names}}' | grep -qx "staging_$key"; then
       capture_diag
-      # distinguish HF-auth failure from a real crash for an accurate STOP
-      if grep -qiE "authentication|unauthorized|401|403|gated|token" "$EV/serve_${key}.log"; then
+      # distinguish HF-auth failure from a real crash for an accurate STOP.
+      # 2026-08-28 fix: do NOT match bare "token" — it appears inside unrelated
+      # errors (e.g. the KV-cache ValueError mentions "tokens") and once caused
+      # a false "HF auth failed" STOP for llama33-70b-fp8's real memory error.
+      if grep -qiE "authentication error|unauthorized|401 client|403 client|gated repo|access to model|invalid token|token is invalid" "$EV/serve_${key}.log"; then
         stop "HF auth failed serving $key — see $EV/serve_${key}.log. Likely: HF_TOKEN unset/invalid, or the gated gemma-4 license not accepted for this token's account."
       fi
       stop "server died for $key — see $EV/serve_${key}.log and $EV/diag_${key}.txt (exit_code/oom_killed)"
