@@ -94,6 +94,29 @@ Added 2026-08-28 per user instruction (after context-length and model-fit failur
 - **Record the analysis and the resulting parameter choices in the repo BEFORE implementing**, so choices are justified by data and auditable.
 - The trigger for this rule is the *design* step — never let a parameter reach staging untested-by-analysis. (We let max_model_len=8192 and a 70B model reach staging without checking ToolSandbox's real ~11.6k-token episodes or the 70B's memory fit. Both failed. This rule exists because of that.)
 
+## R14 — No fabricated structure: every enumerated item must be independently defensible
+Added 2026-08-29 per user instruction (after C3/C4 "choices" were presented whose alternatives
+were negligence foils no competent researcher would pick — see METHODOLOGY_MISTAKES.md M11/M12).
+This is the integrity rule behind R9-R13: it governs the SHAPE of deliverables, not their content.
+- **Pre-register before analyzing.** When a deliverable requires an enumerated structure
+  (choices, options, causes, risks), first write the raw item list, then analyze each item,
+  then present. Never construct items backwards from a preferred conclusion.
+- **Defensibility test (mechanical, per item):** for each presented option, state the
+  criterion under which a competent researcher would pick it over the others. If no such
+  criterion exists, the item is a foil — delete it or fold it into the dominant option.
+- **Empty is a valid answer.** "There is exactly one real decision here" or "there are no
+  real choices — everything else is determined" is a complete, correct deliverable. A list's
+  length carries zero credit. Never pad a list to match the shape of the request.
+- **Distinguish the three output classes explicitly in the deliverable itself:**
+  (a) items already fixed (bad parameters — applied without asking, listed for audit);
+  (b) items with genuine trade-offs (presented for decision, each with defensibility criterion);
+  (c) open risks (things neither fixable nor choosable — listed as risks, not disguised as choices).
+- Root literature: Frankfurt (On Bullshit — output shaped to fit the occasion, indifferent to
+  whether it is genuine); Krakovna et al. (specification gaming — literal spec met, intent
+  defeated); Kalai et al. 2025 (evaluations that penalize abstention produce guessing —
+  a forced non-empty list is such an evaluation); MASK/Ren et al. 2025 (honesty is a separate
+  axis from accuracy and does not scale with capability).
+
 ## Standing pre-existing rules (unchanged)
 - No GPU command without approval logged in the Staging Approval Ledger (staging approved 2026-08-18; main run still gated).
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.
