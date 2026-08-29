@@ -88,7 +88,7 @@ docker run -d --name "$NAME" --gpus "\"device=$GPU_ID\"" \
   ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   "$IMAGE" \
   "$MODEL" --served-model-name "$KEY" \
-  --max-model-len 16384 --gpu-memory-utilization "$MEMUTIL" --enforce-eager \
+  --max-model-len 24576 --gpu-memory-utilization "$MEMUTIL" --enforce-eager \
   > /dev/null || { echo "STOP: docker run failed (see 'docker ps -a')"; exit 1; }
 
 echo "   launched container $NAME — watching for health or death (up to 20 min)..."

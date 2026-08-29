@@ -5,7 +5,10 @@ decoding:
   max_new_tokens: 1024
   seed_from: configs/seeds.yaml
 context:
-  max_model_len: 16384        # capped (not 128K) — keeps Llama-70B FP8 KV pool within H100 80GB
+  max_model_len: 24576        # user decision 2026-08-29 (choice 1-A): workload max ~20.6k tokens
+                              # (ToolSandbox 30-turn cap + ~800-tok repair contract) + ~19% margin.
+                              # Uniform across ALL models (per-model ctx would confound the comparison).
+                              # Binding model qwen3-32b: +9.79 GiB headroom at util 0.90 (passes R12).
   note: "16K covers ToolSandbox multi-turn trajectories with headroom; raising it post-freeze
          requires a new tag"
 timeouts:
@@ -15,12 +18,18 @@ timeouts:
 retry_rule:
   max_transport_retries: 3    # transport-level failures only (5xx/connection), same logical_op_id
   semantic_retries: 0         # a parsed-but-wrong action is DATA, never retried
+# 2026-08-29 (user decision, choice 2-C): UNIFORM SHIM for all four models.
+# No engine-native tool parsers are used at all: the runner formats tool schemas
+# into the prompt and serving/tool_call_shim.py extracts every tool call with
+# guided-JSON (structured outputs) + schema validation. Maximally uniform
+# extraction layer across the experiment; correctness is owned by us and frozen
+# in the shim's test battery (docs/NEW_PARAMETER_VALIDATION.md T2).
+# Engine parsers (hermes/gemma4) are NOT used — flags removed from all launchers.
 tool_parsers:
-  Qwen/Qwen3-32B: hermes
-  Qwen/Qwen3-8B: hermes
-  Qwen/Qwen3-30B-A3B-Instruct-2507: hermes
-  google/gemma-4-31B-it: gemma4   # NATIVE tool calling; gemma_tool_shim.py retained only as
-                                  # last-resort fallback if the pinned vLLM/sglang parser fails
+  Qwen/Qwen3-32B: uniform_shim
+  Qwen/Qwen3-8B: uniform_shim
+  Qwen/Qwen3-30B-A3B-Instruct-2507: uniform_shim
+  google/gemma-4-31B-it: uniform_shim
 serving:
   engine: vllm
   gpu_memory_utilization: 0.90   # aligned with all serving/staging launchers (R12 headroom)

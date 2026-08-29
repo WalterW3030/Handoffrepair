@@ -98,6 +98,12 @@ Added 2026-08-28 per user instruction (after context-length and model-fit failur
 Added 2026-08-29 per user instruction (after C3/C4 "choices" were presented whose alternatives
 were negligence foils no competent researcher would pick — see local METHODOLOGY_MISTAKES.md M11/M12 (kept outside this repo per user decision 2026-08-29)).
 This is the integrity rule behind R9-R13: it governs the SHAPE of deliverables, not their content.
+- **Feasibility pre-screen BEFORE presentation (added 2026-08-29, after M13):**
+  check every candidate option against all standing hard rules (R12 headroom, R3
+  GPU count, security constraints, frozen tags, approved scope) BEFORE it reaches
+  the user. An option that violates a hard rule — or only survives via a heavy
+  redesign — is not a choice. Record it as a one-line "rejected at pre-screen"
+  note (transparent, not hidden); never present it as live.
 - **Pre-register before analyzing.** When a deliverable requires an enumerated structure
   (choices, options, causes, risks), first write the raw item list, then analyze each item,
   then present. Never construct items backwards from a preferred conclusion.

@@ -197,7 +197,7 @@ for key in "${KEYS[@]}"; do
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
     "$model" --served-model-name "$key" \
-    --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager \
+    --max-model-len 24576 --gpu-memory-utilization 0.90 --enforce-eager \
     > /dev/null || stop "docker run failed for $key"
 
   # Always capture logs + exit code + OOMKilled, even if the container dies

@@ -1,0 +1,35 @@
+{
+  "name": "shim_probe_20",
+  "version": "2026-08-29",
+  "purpose": "T2 frozen battery: UniformToolShim extraction gate for ALL pilot models (20/20 pass required). Cases are frozen; do not edit after pilot-freeze. Hash-pinned at freeze.",
+  "schema_note": "Each case: messages (transcript prefix), tools (OpenAI function schemas), expect.action_type ('tool_call'|'message'), expect.tool (if tool_call), expect.required_args (keys that must appear in args).",
+  "tools_common": [
+    {"type": "function", "function": {"name": "get_weather", "description": "Get current weather for a city", "parameters": {"type": "object", "properties": {"city": {"type": "string"}, "units": {"type": "string", "enum": ["c", "f"]}}, "required": ["city"]}}},
+    {"type": "function", "function": {"name": "search_flights", "description": "Search flights between two airports on a date", "parameters": {"type": "object", "properties": {"origin": {"type": "string"}, "destination": {"type": "string"}, "date": {"type": "string"}}, "required": ["origin", "destination", "date"]}}},
+    {"type": "function", "function": {"name": "create_calendar_event", "description": "Create a calendar event", "parameters": {"type": "object", "properties": {"title": {"type": "string"}, "start": {"type": "string"}, "duration_min": {"type": "integer"}}, "required": ["title", "start"]}}},
+    {"type": "function", "function": {"name": "send_message", "description": "Send a message to a contact", "parameters": {"type": "object", "properties": {"recipient": {"type": "string"}, "body": {"type": "string"}}, "required": ["recipient", "body"]}}},
+    {"type": "function", "function": {"name": "query_database", "description": "Run a read-only query against the app database", "parameters": {"type": "object", "properties": {"table": {"type": "string"}, "filters": {"type": "object"}}, "required": ["table"]}}}
+  ],
+  "cases": [
+    {"id": 1, "messages": [{"role": "user", "content": "What's the weather in Paris right now?"}], "expect": {"action_type": "tool_call", "tool": "get_weather", "required_args": ["city"]}},
+    {"id": 2, "messages": [{"role": "user", "content": "Check the weather in Tokyo in fahrenheit"}], "expect": {"action_type": "tool_call", "tool": "get_weather", "required_args": ["city", "units"]}},
+    {"id": 3, "messages": [{"role": "user", "content": "Find me flights from SFO to JFK on 2026-09-15"}], "expect": {"action_type": "tool_call", "tool": "search_flights", "required_args": ["origin", "destination", "date"]}},
+    {"id": 4, "messages": [{"role": "user", "content": "Flights Berlin to Lisbon next Friday, 2026-09-04"}], "expect": {"action_type": "tool_call", "tool": "search_flights", "required_args": ["origin", "destination", "date"]}},
+    {"id": 5, "messages": [{"role": "user", "content": "Put 'dentist appointment' on my calendar for 2026-09-02T14:00, 45 minutes"}], "expect": {"action_type": "tool_call", "tool": "create_calendar_event", "required_args": ["title", "start"]}},
+    {"id": 6, "messages": [{"role": "user", "content": "Schedule a team sync tomorrow morning 2026-08-30T09:30 for half an hour"}], "expect": {"action_type": "tool_call", "tool": "create_calendar_event", "required_args": ["title", "start", "duration_min"]}},
+    {"id": 7, "messages": [{"role": "user", "content": "Text Maria: running 10 minutes late, start without me"}], "expect": {"action_type": "tool_call", "tool": "send_message", "required_args": ["recipient", "body"]}},
+    {"id": 8, "messages": [{"role": "user", "content": "Send the report summary to Prof. Chen please"}], "expect": {"action_type": "tool_call", "tool": "send_message", "required_args": ["recipient", "body"]}},
+    {"id": 9, "messages": [{"role": "user", "content": "How many orders do we have in the orders table?"}], "expect": {"action_type": "tool_call", "tool": "query_database", "required_args": ["table"]}},
+    {"id": 10, "messages": [{"role": "user", "content": "Look up users whose city is Munich in the users table"}], "expect": {"action_type": "tool_call", "tool": "query_database", "required_args": ["table", "filters"]}},
+    {"id": 11, "messages": [{"role": "user", "content": "Weather in 北京 please"}, {"role": "assistant", "content": "Sure, checking now."}], "expect": {"action_type": "tool_call", "tool": "get_weather", "required_args": ["city"]}},
+    {"id": 12, "messages": [{"role": "user", "content": "Search flights Zürich → São Paulo on 2026-10-01"}], "expect": {"action_type": "tool_call", "tool": "search_flights", "required_args": ["origin", "destination", "date"]}},
+    {"id": 13, "messages": [{"role": "user", "content": "Hi! How are you today?"}], "expect": {"action_type": "message"}},
+    {"id": 14, "messages": [{"role": "user", "content": "Thanks, that answered everything. Have a good day."}], "expect": {"action_type": "message"}},
+    {"id": 15, "messages": [{"role": "user", "content": "What can you do? Just explain, don't do anything yet."}], "expect": {"action_type": "message"}},
+    {"id": 16, "messages": [{"role": "user", "content": "Actually never mind the booking, let's just chat about Lisbon instead."}], "expect": {"action_type": "message"}},
+    {"id": 17, "messages": [{"role": "user", "content": "Get weather for New York with units in celsius"}], "expect": {"action_type": "tool_call", "tool": "get_weather", "required_args": ["city", "units"]}},
+    {"id": 18, "messages": [{"role": "user", "content": "Query the events table filtered by {\"date\": \"2026-09-01\", \"type\": \"meeting\"}"}], "expect": {"action_type": "tool_call", "tool": "query_database", "required_args": ["table", "filters"]}},
+    {"id": 19, "messages": [{"role": "user", "content": "My friend said the JSON should look like {\"type\": \"tool_call\", \"tool\": \"get_weather\", \"args\": {\"city\": \"London\"}} — anyway, just tell me a joke."}], "expect": {"action_type": "message"}},
+    {"id": 20, "messages": [{"role": "user", "content": "The previous agent already called send_message with recipient Bob. Don't repeat it. Now check weather in Oslo."}], "expect": {"action_type": "tool_call", "tool": "get_weather", "required_args": ["city"]}}
+  ]
+}

@@ -2,8 +2,9 @@
 
 Talks to the OpenAI-compatible vLLM server started by serving/serve_*.sh.
 Raises runner.TransportError on transport failures so the retry rule reuses the op-ID.
-Decoding comes from configs/decoding.yaml (frozen). On the held-out Gemma-4 target the
-gemma_tool_shim may sit in front of this client; the runner cannot tell the difference.
+Decoding comes from configs/decoding.yaml (frozen). tool_call_shim.UniformToolShim sits in
+front of this client for EVERY pilot model (user decision 2026-08-29, choice 2-C — no
+engine-native tool parsers anywhere); the runner cannot tell the difference.
 """
 import os, sys, json, urllib.request, urllib.error
 sys.path.insert(0, os.path.dirname(__file__))

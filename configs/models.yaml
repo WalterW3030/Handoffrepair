@@ -64,16 +64,10 @@ serving:
   container_image: "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
   prefix_caching: required
   gemma_endpoint:
-    # P2 GATE (Day-0 blocker, unchanged): Gemma-4 tool-call parsing in vLLM is still reported
-    # unreliable as of v0.24.0 (upstream issues #39468, #44522; parser leaks raw tokens).
-    # Both options below are PINNED; the choice between them is a predeclared decision rule,
-    # not a TBD:
-    #   1) serve gemma-4-31B-it with vllm 0.27.1 + --tool-call-parser gemma4
-    #      --reasoning-parser gemma4 + vendored examples/tool_chat_template_gemma4.jinja
-    #      (sha256 afdbb2ab...3b8927); run the frozen 20-probe tool-call set.
-    #   2) IF parse/structure success < 100% on the probe set -> switch THIS ENDPOINT ONLY to
-    #      sglang v0.5.14 (pinned; reported working for gemma4 tool calling, Jul 2026) with the
-    #      same probe gate. gemma_tool_shim.py remains the last-resort fallback (tested).
-    primary: {engine: vllm, version: "0.27.1", parser: gemma4}
-    fallback: {engine: sglang, version: "0.5.14", parser: gemma4}
-    gate: "20/20 frozen probe tool calls parse correctly, else fallback; else shim; else STOP"
+    # 2026-08-29 (user decision, choice 2-C): the vLLM->sglang->shim waterfall is RETIRED.
+    # Tool-call extraction for gemma-4-31B-it — same as for every other pilot model — goes
+    # through serving/tool_call_shim.py (UniformToolShim): prompt-formatted tool schemas +
+    # guided-JSON + schema validation. One frozen extraction layer for the whole experiment.
+    # Upstream gemma4-parser issues (#39468, #44522) no longer gate Day 0.
+    extraction: {layer: serving/tool_call_shim.py, class: UniformToolShim, guided_json: true, max_retries: 2}
+    gate: "shim extraction 20/20 on the frozen probe battery (T2 in docs/NEW_PARAMETER_VALIDATION.md), else STOP"
