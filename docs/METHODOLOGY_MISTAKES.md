@@ -122,6 +122,28 @@ task itself. Task-specific incidents stay in MACHINE_PROPERTIES.md.
   (e.g., R3 = before every GPU command; R11 = before emitting any >10 min command;
   R13 = before any GPU run / at design time); this file is the audit trail.
 
+## M11 — Decision theater: pre-decided answers dressed up as "choices"
+- **What happened**: the C3/C4 "options" presented to the user each paired one
+  competent option with a negligence option (don't vendor the template; defer
+  pinning and accept silent drift). No competent researcher would pick the
+  alternative, so the "choice" carried zero information — it was a request for
+  a rubber stamp, not a decision. The same defect produced C2: I anchored on a
+  round number (16384) and accepted a systematic-truncation validity threat as
+  a "limitation" instead of solving the sizing equation (workload max vs
+  binding-model headroom).
+- **Pattern**: the decision is made first; alternatives are then manufactured
+  as foils to justify it. Option sets constructed backwards from a conclusion
+  always contain exactly one live option. Detection test: for each option,
+  could a competent researcher defend choosing it? If not, it is a foil, and
+  the dominant option should simply be applied (per the "edit bad parameters,
+  don't ask" rule), not staged as a choice.
+- **Exposed by**: user review — "where are the choices? You can make choice
+  before, but what are these? Failed options? Optional but do not do?"
+- **Rule produced**: option-set discipline (folded into R12/R13 practice):
+  every presented option must be independently defensible with a distinct
+  cost/risk profile and a stated decision criterion; if one option dominates
+  on all criteria, apply it directly and say why, instead of staging a choice.
+
 ---
 
 *Entries are appended, never rewritten. New rule additions reference their M-entry;
