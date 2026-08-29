@@ -96,7 +96,7 @@ Added 2026-08-28 per user instruction (after context-length and model-fit failur
 
 ## R14 — No fabricated structure: every enumerated item must be independently defensible
 Added 2026-08-29 per user instruction (after C3/C4 "choices" were presented whose alternatives
-were negligence foils no competent researcher would pick — see METHODOLOGY_MISTAKES.md M11/M12).
+were negligence foils no competent researcher would pick — see local METHODOLOGY_MISTAKES.md M11/M12 (kept outside this repo per user decision 2026-08-29)).
 This is the integrity rule behind R9-R13: it governs the SHAPE of deliverables, not their content.
 - **Pre-register before analyzing.** When a deliverable requires an enumerated structure
   (choices, options, causes, risks), first write the raw item list, then analyze each item,
