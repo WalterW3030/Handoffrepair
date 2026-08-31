@@ -1,0 +1,827 @@
+
+============================================================
+  这是共用的服务器，请大家不要单独占满卡。
+  This is a shared GPU server. Please do not monopolize all GPUs.
+============================================================
+
+^[[?61;4;6;7;14;21;22;23;24;28;32;42;52c^[[>0;10;1c-bash: /home/ubuntu/.bashrc: line 153: syntax error near unexpected t
+oken `newline'
+-bash: /home/ubuntu/.bashrc: line 153: `export RAPID_API_KEY=<your key>'
+(base) ubuntu@h800-8-1:~$ 61;4;6;7;14;21;22;23;24;28;32;42;52c0;10;1c^C
+(base) ubuntu@h800-8-1:~$ sed -i '153s|^|#|' ~/.bashrc && source ~/.bashrc
+(base) ubuntu@h800-8-1:~$ bash -l -c 'echo shell-clean'   # no syntax error line should appear
+echo "${RAPID_API_KEY:+key is set}"
+
+============================================================
+  这是共用的服务器，请大家不要单独占满卡。
+  This is a shared GPU server. Please do not monopolize all GPUs.
+============================================================
+
+shell-clean
+key is set
+(base) ubuntu@h800-8-1:~$ cd /ephemeral/hr/Handoffrepair && git pull --no-rebase origin master
+
+REV=$(curl -s https://huggingface.co/api/models/Qwen/Qwen3-30B-A3B-Instruct-2507 | python3 -c "import json,sys;print(jso
+n.load(sys.stdin)['sha'])")
+echo "pinned revision: $REV"   # → write this into configs/weight_sha256.lock (revision field)
+                               #    and export QWEN3_30B_A3B_REV=$REV before staging
+
+tmux new -s dl
+export HF_HOME=/ephemeral/hr/pilot/hf
+read -rsp "HF_TOKEN: " HF_TOKEN && export HF_TOKEN && echo   # input hidden; needed for gemma-4 later anyway
+python3 -c "from huggingface_hub import snapshot_download; snapshot_download('Qwen/Qwen3-30B-A3B-Instruct-2507', revisio
+n='$REV')"
+remote: Enumerating objects: 74, done.
+remote: Counting objects: 100% (53/53), done.
+remote: Compressing objects: 100% (23/23), done.
+remote: Total 74 (delta 33), reused 48 (delta 30), pack-reused 21 (from 1)
+Unpacking objects: 100% (74/74), 55.97 KiB | 1.75 MiB/s, done.
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+   bb374a2..453de4b  master     -> origin/master
+Updating bb374a2..453de4b
+Fast-forward
+ configs/decoding.yaml            |  23 ++++++++++++------
+ configs/models.yaml              |  40 +++++++++++++++----------------
+ configs/weight_sha256.lock       |  30 ++++++++++--------------
+ docs/EXECUTION_RULES.md          |  43 ++++++++++++++++++++++++++++++++++
+ docs/MACHINE_PROPERTIES.md       |  25 ++++++++++++++++++++
+ docs/NEW_PARAMETER_VALIDATION.md | 101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/OPTIONAL_MODELS_32K.md      |  70 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/staging_collect.sh       |  16 +++++++++----
+ serving/gemma_tool_shim.py       |  78 ++++---------------------------------------------------------
+ serving/serve_gemma4_31b.sh      |   3 +--
+ serving/serve_llama33_70b.sh     |  25 --------------------
+ serving/serve_qwen3_30b_a3b.sh   |  43 ++++++++++++++++++++++++++++++++++
+ serving/serve_qwen3_32b.sh       |   5 ++--
+ serving/serve_qwen3_8b.sh        |   3 +--
+ serving/tool_call_shim.py        | 101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ smoke/shim_probe_20.json         |  35 ++++++++++++++++++++++++++++
+ src/vllm_client.py               |   5 ++--
+ tools/push_latest_evidence.sh    |  39 +++++++++++++++++++++++++++++++
+ tools/quick_probe.sh             |   6 ++---
+ 19 files changed, 529 insertions(+), 162 deletions(-)
+ create mode 100644 docs/NEW_PARAMETER_VALIDATION.md
+ create mode 100644 docs/OPTIONAL_MODELS_32K.md
+ delete mode 100644 serving/serve_llama33_70b.sh
+ create mode 100644 serving/serve_qwen3_30b_a3b.sh
+ create mode 100644 serving/tool_call_shim.py
+ create mode 100644 smoke/shim_probe_20.json
+ create mode 100644 tools/push_latest_evidence.sh
+pinned revision: 0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe
+sessions should be nested with care, unset $TMUX to force
+HF_TOKEN:
+Fetching 27 files:  59%|█████████████████████████████████████▎                         | 16/27 [01:00<00:41,  3.79s/it]
+Traceback (most recent call last):.): 100%|██████████████████████████████████████████████▉| 61.1GB / 61.1GB, 2.35GB/s
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/httpx/_decoders.py", line 141, in decode<00:29,  2.64s/it]
+    return self._decompress(data)
+           ~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/brotlicffi/_api.py", line 413, in decompress
+    raise error(
+    ...<2 lines>...
+    )
+brotlicffi._api.error: brotli: decoder process called with data when 'can_accept_more_data()' is False
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from huggingface_hub import snapshot_download; snapshot_download('Qwen/Qwen3-30B-A3B-Instruct-2507', revision='0d7cf
+23991f47feeb3a57ecb4c9cee8ea4a17bfe')
+                                                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_f
+n
+    return fn(*args, **kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/_snapshot_download.py", line 514, in snapsh
+ot_download
+    hf_thread_map(
+    ~~~~~~~~~~~~~^
+        _inner_hf_hub_download,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        tqdm_class=tqdm_class,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/tqdm.py", line 441, in hf_thread_map
+    results[future_to_index[future]] = future.result()
+                                       ~~~~~~~~~~~~~^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/ubuntu/miniconda3/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/_snapshot_download.py", line 494, in _inner
+_hf_hub_download
+    hf_hub_download(  # type: ignore
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+        repo_id,
+        ^^^^^^^^
+    ...<14 lines>...
+        dry_run=dry_run,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_f
+n
+    return fn(*args, **kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 1013, in hf_hub_dow
+nload
+    return _hf_hub_download_to_cache_dir(
+        # Destination
+    ...<15 lines>...
+        dry_run=dry_run,
+    )
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 1241, in _hf_hub_do
+wnload_to_cache_dir
+    _download_to_tmp_and_move(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        incomplete_path=Path(blob_path + ".incomplete"),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        tqdm_class=tqdm_class,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 1941, in _download_
+to_tmp_and_move
+    http_get(
+    ~~~~~~~~^
+        url_to_download,
+        ^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        tqdm_class=tqdm_class,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_f
+n
+    return fn(*args, **kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 437, in http_get
+    for chunk in response.iter_bytes(chunk_size=constants.DOWNLOAD_CHUNK_SIZE):
+                 ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/httpx/_models.py", line 898, in iter_bytes
+    decoded = decoder.decode(raw_bytes)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/httpx/_decoders.py", line 143, in decode
+    raise DecodingError(str(exc)) from exc
+httpx.DecodingError: brotli: decoder process called with data when 'can_accept_more_data()' is False
+Segmentation fault (core dumped)
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ pip install hf_transfer
+export HF_HUB_ENABLE_HF_TRANSFER=1
+export HF_HOME=/ephemeral/hr/pilot/hf
+export QWEN3_30B_A3B_REV=<the pinned rev from earlier>   # REV from the old shell doesn't carry over
+python3 -c "from huggingface_hub import snapshot_download; snapshot_download('Qwen/Qwen3-30B-A3B-Instruct-2507', revisio
+n='$QWEN3_30B_A3B_REV')"
+Requirement already satisfied: hf_transfer in /home/ubuntu/miniconda3/lib/python3.13/site-packages (0.1.9)
+
+[notice] A new release of pip is available: 26.1.2 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+-bash: syntax error near unexpected token `newline'
+/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/constants.py:298: FutureWarning: The `HF_HUB_ENABLE
+_HF_TRANSFER` environment variable is deprecated as 'hf_transfer' is not used anymore. Please use `HF_XET_HIGH_PERFORMAN
+CE` instead to enable high performance transfer with Xet. Visit https://huggingface.co/docs/huggingface_hub/package_refe
+rence/environment_variables#hfxethighperformance for more details.
+  warnings.warn(
+Traceback (most recent call last):
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_http.py", line 795, in hf_raise_for_
+status
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '404 Not Found' for url 'https://huggingface.co/api/models/Qwen/Qwen3-30B-A3B-Instru
+ct-2507/revision'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/_snapshot_download.py", line 258, in snapsh
+ot_download
+    repo_info = api.repo_info(repo_id=repo_id, repo_type=repo_type, revision=revision)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_f
+n
+    return fn(*args, **kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/hf_api.py", line 3632, in repo_info
+    return method(
+        repo_id,
+    ...<4 lines>...
+        files_metadata=files_metadata,
+    )
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_f
+n
+    return fn(*args, **kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/hf_api.py", line 3312, in model_info
+    hf_raise_for_status(r)
+    ~~~~~~~~~~~~~~~~~~~^^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_http.py", line 924, in hf_raise_for_
+status
+    raise _format(HfHubHTTPError, str(e), response) from e
+huggingface_hub.errors.HfHubHTTPError: Client error '404 Not Found' for url 'https://huggingface.co/api/models/Qwen/Qwen
+3-30B-A3B-Instruct-2507/revision' (Request ID: Root=1-6a959f54-5b5bdcf04c295e332e2d0f4a;30a3c5dd-e803-436c-95c4-a1a96f7b
+c702)
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+
+Sorry, we can't find the page you are looking for.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from huggingface_hub import snapshot_download; snapshot_download('Qwen/Qwen3-30B-A3B-Instruct-2507', revision='')
+                                                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_f
+n
+    return fn(*args, **kwargs)
+  File "/home/ubuntu/miniconda3/lib/python3.13/site-packages/huggingface_hub/_snapshot_download.py", line 363, in snapsh
+ot_download
+    raise LocalEntryNotFoundError(
+    ...<4 lines>...
+    ) from api_call_error
+huggingface_hub.errors.LocalEntryNotFoundError: Got: HfHubHTTPError: Client error '404 Not Found' for url 'https://huggi
+ngface.co/api/models/Qwen/Qwen3-30B-A3B-Instruct-2507/revision' (Request ID: Root=1-6a959f54-5b5bdcf04c295e332e2d0f4a;30
+a3c5dd-e803-436c-95c4-a1a96f7bc702)
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+
+Sorry, we can't find the page you are looking for.
+An error happened while trying to locate the files on the Hub, and we cannot find the appropriate snapshot folder for th
+e specified revision on the local disk. Please check your internet connection and try again.
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ pip uninstall -y brotli brotlicffi
+# retry the same python3 snapshot_download command
+WARNING: Skipping brotli as it is not installed.
+Found existing installation: brotlicffi 1.2.0.0
+Uninstalling brotlicffi-1.2.0.0:
+  Successfully uninstalled brotlicffi-1.2.0.0
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ ^C
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ ls /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2
+507/snapshots/
+0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ ls /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2
+507/snapshots/<rev>/ | head -25
+# expect 16 model-000XX-of-00016.safetensors shards + config/tokenizer files, ~57 GiB total
+du -sh /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2507/
+-bash: rev: No such file or directory
+57G     /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2507/
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ cd /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2
+507/snapshots/<rev>/
+sha256sum model-*.safetensors
+-bash: rev: No such file or directory
+sha256sum: 'model-*.safetensors': No such file or directory
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ ls /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2
+507/snapshots/0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe/ | head -25
+LICENSE
+README.md
+config.json
+config_1m.json
+generation_config.json
+merges.txt
+model-00001-of-00016.safetensors
+model-00002-of-00016.safetensors
+model-00003-of-00016.safetensors
+model-00004-of-00016.safetensors
+model-00005-of-00016.safetensors
+model-00006-of-00016.safetensors
+model-00007-of-00016.safetensors
+model-00008-of-00016.safetensors
+model-00009-of-00016.safetensors
+model-00010-of-00016.safetensors
+model-00011-of-00016.safetensors
+model-00012-of-00016.safetensors
+model-00013-of-00016.safetensors
+model-00014-of-00016.safetensors
+model-00015-of-00016.safetensors
+model-00016-of-00016.safetensors
+tokenizer.json
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ cd /ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2
+507/snapshots/0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe/ && sha256sum model-*.safetensors
+afe775cbdefb257e1bf1d8551fb930bd4b78d74da0b10bbb651f6b6a6f67c325  model-00001-of-00016.safetensors
+c0eefe9ed74050f4144fcb1b614c6915462e756b6673a9cca67f446b00c3434f  model-00002-of-00016.safetensors
+18ebd81e648667b1513786fc75886044e8ccb06b04562a35cbea59a41e4bcbbf  model-00003-of-00016.safetensors
+5df2f491c8c96651963a0d84db89d7647febc0e5f4f96cc67c2edac2d4a731b2  model-00004-of-00016.safetensors
+276477e938cd0de42c967faa7c10bc03a1a4b3e82135d5e17469152d0dd5374e  model-00005-of-00016.safetensors
+ac03cec889c40085113ddcb8f73216a157e7b83f06bb37aaf6a4699b84fa4abe  model-00006-of-00016.safetensors
+382aee85a70fccca2bde6043a0aefc16f3fd2e87e2a8d1ccf1eba442f7a98e92  model-00007-of-00016.safetensors
+effec719bf78d74170f294d94f1240b8f6f30c5402a04a3dc2cb42c8cdaa101a  model-00008-of-00016.safetensors
+6f272f00be2100f34d3a0463fb6e66b106f015bbc9aaba02b1898a102938d7c1  model-00009-of-00016.safetensors
+c2bc4101cde6b7c9dda36bbdff815c2ff19541d7732e94d306d87a0806c133b3  model-00010-of-00016.safetensors
+adb34c5b4c1e4c85527218638c246181ffb7763ed033c0f3d09f5242e7022712  model-00011-of-00016.safetensors
+d4276b408eca9c249fd317f725074e9a443107ca6cfd518d5cea3911f1cefce2  model-00012-of-00016.safetensors
+c7070b4e079477665f2a6f5a26704bdcbd757afa4b7edc3d628128abe9157c51  model-00013-of-00016.safetensors
+c50e816929903e80e9e6ca4d6eec3b643a50478e61407495fbc10f3c999b0fd5  model-00014-of-00016.safetensors
+5351255875a9b79507db1357e61f109ec880fd3e4a2000d5f7c51494aa77d288  model-00015-of-00016.safetensors
+fa5623e55641935f938894cc91090732452ef22da12596e857c8dff4fa71627b  model-00016-of-00016.safetensors
+(base) ubuntu@h800-8-1:/ephemeral/hr/pilot/hf/hub/models--Qwen--Qwen3-30B-A3B-Instruct-2507/snapshots/0d7cf23991f47feeb3
+a57ecb4c9cee8ea4a17bfe$ sha256sum model-*.safetensors > /ephemeral/hr/Handoffrepair/evidence/qwen30b_sha256_0d7cf239.txt
+
+cd /ephemeral/hr/Handoffrepair && git pull --no-rebase origin master && git add evidence/ && git commit -m "qwen30b sha2
+56sums for rev 0d7cf239" && git push
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+Already up to date.
+[master 126e818] qwen30b sha256sums for rev 0d7cf239
+ 1 file changed, 16 insertions(+)
+ create mode 100644 evidence/qwen30b_sha256_0d7cf239.txt
+Enumerating objects: 6, done.
+Counting objects: 100% (6/6), done.
+Delta compression using up to 252 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 1.03 KiB | 1.03 MiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:WalterW3030/Handoffrepair.git
+   453de4b..126e818  master -> master
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ ^C
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ export QWEN3_30B_A3B_REV=0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ cd /ephemeral/hr/Handoffrepair && git pull --no-rebase origin master
+remote: Enumerating objects: 9, done.
+remote: Counting objects: 100% (9/9), done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 5 (delta 4), reused 5 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (5/5), 1.47 KiB | 1.47 MiB/s, done.
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+   126e818..06c3023  master     -> origin/master
+Updating 126e818..06c3023
+Fast-forward
+ configs/models.yaml        |  4 ++--
+ configs/weight_sha256.lock | 28 ++++++++++++++++++++--------
+ 2 files changed, 22 insertions(+), 10 deletions(-)
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ tmux new -s staging
+cd /ephemeral/hr/Handoffrepair
+export QWEN3_30B_A3B_REV=0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe
+nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv   # R3 check — confirm a GPU is free
+bash scripts/staging_collect.sh
+sessions should be nested with care, unset $TMUX to force
+index, memory.used [MiB], memory.total [MiB]
+0, 0 MiB, 81559 MiB
+1, 0 MiB, 81559 MiB
+2, 0 MiB, 81559 MiB
+3, 3679 MiB, 81559 MiB
+4, 1405 MiB, 81559 MiB
+5, 0 MiB, 81559 MiB
+6, 0 MiB, 81559 MiB
+7, 0 MiB, 81559 MiB
+evidence dir: staging_evidence/20260831T164655Z
+== [-1/5] docker daemon reachable? ==
+docker OK (mode=system): /ephemeral/hr/docker-data
+== [0/5] environment record ==
+Mon Aug 31 16:46:56 UTC 2026
+Linux h800-8-1 6.14.0-37-generic #37~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Thu Nov 20 10:25:38 UTC 2 x86_64 x86_64 x86_64 G
+NU/Linux
+Mon Aug 31 16:46:56 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.195.03             Driver Version: 570.195.03     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 PCIe               On  |   00000000:00:07.0 Off |                    0 |
+| N/A   37C    P0             51W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA H100 PCIe               On  |   00000000:00:08.0 Off |                    0 |
+| N/A   36C    P0             50W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA H100 PCIe               On  |   00000000:00:09.0 Off |                    0 |
+| N/A   47C    P0             52W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA H100 PCIe               On  |   00000000:00:0A.0 Off |                    0 |
+| N/A   44C    P0             87W /  350W |    3679MiB /  81559MiB |      6%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   4  NVIDIA H100 PCIe               On  |   00000000:00:0B.0 Off |                    0 |
+| N/A   45C    P0            109W /  350W |    1405MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   5  NVIDIA H100 PCIe               On  |   00000000:00:0C.0 Off |                    0 |
+| N/A   39C    P0             54W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   6  NVIDIA H100 PCIe               On  |   00000000:00:0D.0 Off |                    0 |
+| N/A   34C    P0             50W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   7  NVIDIA H100 PCIe               On  |   00000000:00:0E.0 Off |                    0 |
+| N/A   35C    P0             50W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    3   N/A  N/A         2051188      C   python                                 3670MiB |
+|    4   N/A  N/A         2060842      C   ...ns/envs/plan5_flux/bin/python       1396MiB |
++-----------------------------------------------------------------------------------------+
+Python 3.13.13
+Python 3.12.0
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vdb        6.3T  5.7T  291G  96% /ephemeral
+/dev/vdb        6.3T  5.7T  291G  96% /ephemeral
+               total        used        free      shared  buff/cache   available
+Mem:            1416          35         817           0         572        1380
+Swap:              0           0           0
+DockerRootDir=/ephemeral/hr/docker-data
+HF_HOME=/ephemeral/hr/pilot/hf
+RAPID_API_KEY set: yes06b881a744msh39cc94def97fc7ap1c6083jsn61d34164c237
+RAPID_API_KEY probe: FAIL (key present but call failed) — must pass before main run
+== [0b/5] docker storage free-space pre-flight (vLLM image needs ~20G) ==
+  docker DriverStatus: [[Backing Filesystem extfs] [Supports d_type true] [Using metacopy false] [Native Overlay Diff tr
+ue] [userxattr false]]
+  DockerRootDir=/ephemeral/hr/docker-data
+  /ephemeral/hr/docker-data -> 290G free
+== [1/5] pull pinned vLLM image and verify digest ==
+docker.io/vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967: Pulling from vllm/vl
+lm-openai
+Digest: sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+Status: Image is up to date for vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+docker.io/vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+expected=sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+actual=sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+== [2/5] CUDA compat probe: nvidia-smi INSIDE the container (1 GPU) ==
+Mon Aug 31 16:47:00 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.195.03             Driver Version: 570.195.03     CUDA Version: 13.0     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 PCIe               On  |   00000000:00:07.0 Off |                    0 |
+| N/A   37C    P0             51W /  350W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+== [2b/5] HF token pre-check (vLLM pulls models from HF at serve time) ==
+HF_TOKEN is set and ASCII-clean (value not recorded).
+== [3/5] verify weights against configs/weight_sha256.lock ==
+
+verified 40 OK / 0 MISMATCH / 0 MISSING (40 locked files, cache root /ephemeral/hr/pilot/hf)
+== [4/5] per-model launch smoke + peak memory + probes (1 GPU each) ==
+selected GPU 0 (free 81090 MiB; override with GPU_ID=n)
+--- qwen3-32b (Qwen/Qwen3-32B) on port 18080, GPU 0 only
+qwen3-32b peak_mib=75013
+--- qwen3-8b (Qwen/Qwen3-8B) on port 18081, GPU 0 only
+qwen3-8b peak_mib=75471
+--- qwen3-30b-a3b (Qwen/Qwen3-30B-A3B-Instruct-2507) on port 18082, GPU 0 only
+qwen3-30b-a3b peak_mib=73819
+--- gemma4-31b (google/gemma-4-31B-it) on port 18083, GPU 0 only
+STOP: server died for gemma4-31b — see staging_evidence/20260831T164655Z/serve_gemma4-31b.log and staging_evidence/20260
+831T164655Z/diag_gemma4-31b.txt (exit_code/oom_killed)
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ git pull --no-rebase origin master    # 先拉到这个脚本
+bash tools/push_latest_evidence.sh
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+Already up to date.
+latest staging dir: 20260831T164655Z
+copied 15 files to evidence/
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+Already up to date.
+[master 93961c7] evidence: auto-push 20260831T181106Z
+ 13 files changed, 804 insertions(+), 214 deletions(-)
+ create mode 100644 evidence/STOP.txt
+ create mode 100644 evidence/diag_gemma4-31b.txt
+ create mode 100644 evidence/diag_qwen3-30b-a3b.txt
+ create mode 100644 evidence/diag_qwen3-8b.txt
+ create mode 100644 evidence/env.txt
+ create mode 100644 evidence/peak_memory.txt
+ create mode 100644 evidence/serve_gemma4-31b.log
+ create mode 100644 evidence/serve_qwen3-30b-a3b.log
+ create mode 100644 evidence/serve_qwen3-8b.log
+ create mode 100644 evidence/smoke_qwen3-30b-a3b.json
+ create mode 100644 evidence/smoke_qwen3-32b.json
+ create mode 100644 evidence/smoke_qwen3-8b.json
+Enumerating objects: 16, done.
+Counting objects: 100% (16/16), done.
+Delta compression using up to 252 threads
+Compressing objects: 100% (13/13), done.
+Writing objects: 100% (13/13), 11.26 KiB | 5.63 MiB/s, done.
+Total 13 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 2 local objects.
+To github.com:WalterW3030/Handoffrepair.git
+   06c3023..93961c7  master -> master
+pushed: evidence: auto-push 20260831T181106Z
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ ^C
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ bash tools/push_latest_evidence.sh
+latest staging dir: 20260831T164655Z
+copied 15 files to evidence/
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+Already up to date.
+nothing new to commit (evidence already up to date)
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ # quickest targeted check:
+bash tools/quick_probe.sh gemma4-31b
+== quick_probe: gemma4-31b (google/gemma-4-31B-it)  gpu-mem-util=0.90  port=18080 ==
+   image: vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967
+   selected GPU 4 (free 79685 MiB; override with GPU_ID=n)
+docker: invalid reference format
+
+Run 'docker run --help' for more information
+tools/quick_probe.sh: line 86: -v: command not found
+STOP: docker run failed (see 'docker ps -a')
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ cd /ephemeral/hr/Handoffrepair && git pull --no-rebase origin master
+
+bash serving/serve_gemma4_31b.sh     # has Option B; Ctrl-C after HEALTHY + smoke
+remote: Enumerating objects: 33, done.
+remote: Counting objects: 100% (33/33), done.
+remote: Compressing objects: 100% (12/12), done.
+remote: Total 22 (delta 17), reused 15 (delta 10), pack-reused 0 (from 0)
+Unpacking objects: 100% (22/22), 6.56 KiB | 1.09 MiB/s, done.
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+   93961c7..f85a691  master     -> origin/master
+Updating 93961c7..f85a691
+Fast-forward
+ docs/GEMMA4_FIX_OPTIONS.md  | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/MACHINE_PROPERTIES.md  | 38 ++++++++++++++++++++++++++++++++++++++
+ scripts/staging_collect.sh  | 18 ++++++++++++++++++
+ serving/serve_gemma4_31b.sh | 29 +++++++++++++++++++----------
+ serving/serve_qwen3_32b.sh  |  2 +-
+ serving/serve_qwen3_8b.sh   |  2 +-
+ tools/quick_probe.sh        |  2 +-
+ 7 files changed, 127 insertions(+), 13 deletions(-)
+ create mode 100644 docs/GEMMA4_FIX_OPTIONS.md
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system packa
+ge manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip
+.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warni
+ng.
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:345]
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:345]        █     █     █▄   ▄█
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.27.1
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:345]   █▄█▀ █     █     █     █  model   google/gemma-4-31B-it
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:345]
+(APIServer pid=1) INFO 08-31 18:55:06 [api_utils.py:273] non-default args: {'model_tag': 'google/gemma-4-31B-it', 'model
+': 'google/gemma-4-31B-it', 'revision': '842da3794eaa0b77d5f08bae87a17459d91ff475', 'max_model_len': 24576, 'enforce_eag
+er': True, 'served_model_name': ['gemma4-31b'], 'gpu_memory_utilization': 0.9}
+(APIServer pid=1) INFO 08-31 18:55:21 [model.py:645] Resolved architecture: Gemma4ForConditionalGeneration
+(APIServer pid=1) INFO 08-31 18:55:21 [model.py:1883] Using max model len 24576
+(APIServer pid=1) INFO 08-31 18:55:24 [scheduler.py:242] Chunked prefill is enabled with max_num_batched_tokens=8192.
+(APIServer pid=1) INFO 08-31 18:55:24 [config.py:231] Gemma4 model has heterogeneous head dimensions (head_dim=256, glob
+al_head_dim=512). Using FA4 for all layers to avoid mixed FA3/FA4 penalty.
+(APIServer pid=1) WARNING 08-31 18:55:24 [vllm.py:1194] Enforce eager set, disabling torch.compile and CUDAGraphs. This
+is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(APIServer pid=1) WARNING 08-31 18:55:24 [vllm.py:1247] Inductor compilation was disabled by user settings, optimization
+s settings that are only active during inductor compilation will be ignored.
+(APIServer pid=1) INFO 08-31 18:55:24 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriority
+Config(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(APIServer pid=1) INFO 08-31 18:55:24 [vllm.py:1426] Cudagraph is disabled under eager mode
+(APIServer pid=1) WARNING 08-31 18:55:24 [cuda.py:323] Forcing --disable_chunked_mm_input for models with multimodal-bid
+irectional attention.
+(APIServer pid=1) INFO 08-31 18:55:24 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+(EngineCore pid=412) INFO 08-31 18:55:35 [core.py:121] Initializing a V1 LLM engine (v0.27.1) with config: model='google
+/gemma-4-31B-it', speculative_config=None, tokenizer='google/gemma-4-31B-it', skip_tokenizer_init=False, tokenizer_mode=
+auto, revision=842da3794eaa0b77d5f08bae87a17459d91ff475, tokenizer_revision=842da3794eaa0b77d5f08bae87a17459d91ff475, tr
+ust_remote_code=False, dtype=torch.bfloat16, max_seq_len=24576, download_dir=None, load_format=auto, tensor_parallel_siz
+e=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_cus
+tom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=True, enable_return_routed_experts=Fals
+e, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_an
+y_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reas
+oning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None,
+collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_laye
+rwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=Fa
+lse, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=gemma4-31b, enable_prefix_caching=Tr
+ue, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_
+path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'ir_e
+nable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cuda
+graph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': N
+one, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2
+': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMod
+e.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_spe
+cialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': T
+rue, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_nor
+m_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False
+}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_gu
+ards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_l
+ayers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_n
+orm=['vllm_c', 'native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_b
+f16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=412) INFO 08-31 18:55:40 [parallel_state.py:1640] world_size=1 rank=0 local_rank=0 distributed_init_meth
+od=tcp://172.17.0.2:43727 backend=nccl
+(EngineCore pid=412) INFO 08-31 18:55:40 [parallel_state.py:1977] rank 0 in world size 1 is assigned as DP rank 0, PP ra
+nk 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=412) INFO 08-31 18:55:40 [gpu_worker.py:385] Using V2 Model Runner
+(EngineCore pid=412) INFO 08-31 18:55:41 [model_runner.py:308] Loading model from scratch...
+(EngineCore pid=412) WARNING 08-31 18:55:41 [vllm.py:1194] Enforce eager set, disabling torch.compile and CUDAGraphs. Th
+is is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=412) WARNING 08-31 18:55:41 [vllm.py:1247] Inductor compilation was disabled by user settings, optimizat
+ions settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=412) INFO 08-31 18:55:41 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPrior
+ityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(EngineCore pid=412) INFO 08-31 18:55:41 [vllm.py:1426] Cudagraph is disabled under eager mode
+(EngineCore pid=412) INFO 08-31 18:55:41 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+(EngineCore pid=412) INFO 08-31 18:55:41 [cuda.py:482] Using FLASH_ATTN attention backend out of potential backends: ['F
+LASH_ATTN', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=412) INFO 08-31 18:55:41 [flash_attn.py:789] Using FlashAttention version 4
+(EngineCore pid=412) INFO 08-31 18:55:42 [weight_utils.py:867] Filesystem type for checkpoints: EXT4. Checkpoint size: 5
+8.25 GiB. Available RAM: 1366.12 GiB.
+(EngineCore pid=412) INFO 08-31 18:55:42 [weight_utils.py:890] Auto-prefetch is disabled because the filesystem (EXT4) i
+s not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strateg
+y=prefetch.
+Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:06<00:06,  6.20s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:09<00:00,  4.28s/it]
+Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:09<00:00,  4.57s/it]
+(EngineCore pid=412)
+(EngineCore pid=412) INFO 08-31 18:55:51 [default_loader.py:430] Loading weights took 9.51 seconds
+(EngineCore pid=412) INFO 08-31 18:55:52 [model_runner.py:329] Model loading took 58.99 GiB and 11.408055 seconds
+(EngineCore pid=412) INFO 08-31 18:55:52 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=412) INFO 08-31 18:56:16 [encoder_runner.py:80] Encoder cache will be initialized with a budget of 8192
+tokens, and profiled with 3 video items of the maximum feature size.
+(EngineCore pid=412) INFO 08-31 18:56:20 [gpu_worker.py:563] Available KV cache memory: 9.44 GiB
+(EngineCore pid=412) Process EngineCore:
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349] EngineCore failed to start.
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349] Traceback (most recent call last):
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/
+core.py", line 1318, in run_engine_core
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, *
+*kwargs)
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/ot
+el.py", line 178, in sync_wrapper
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     return func(*args, **kwargs)
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/
+core.py", line 1074, in __init__
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     super().__init__(
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/
+core.py", line 143, in __init__
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/ot
+el.py", line 178, in sync_wrapper
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     return func(*args, **kwargs)
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/
+core.py", line 304, in _initialize_kv_caches
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]                        ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/core/kv
+_cache_utils.py", line 2190, in get_kv_cache_configs
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     _check_enough_kv_cache_memory(
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/core/kv
+_cache_utils.py", line 778, in _check_enough_kv_cache_memory
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349]     raise ValueError(
+(EngineCore pid=412) ERROR 08-31 18:56:20 [core.py:1349] ValueError: To serve at least one request with the model's max
+seq len (24576), (15.17 GiB KV cache is needed, which is larger than the available KV cache memory (9.44 GiB). Based on
+the available memory, the estimated maximum model length is 11232. Try increasing `gpu_memory_utilization` (which also c
+ontrols CPU memory on the CPU backend) or decreasing `max_model_len` when initializing the engine. See https://docs.vllm
+.ai/en/latest/configuration/conserving_memory/ for more details.
+(EngineCore pid=412) Traceback (most recent call last):
+(EngineCore pid=412)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=412)     self.run()
+(EngineCore pid=412)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore pid=412)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1353, in run_engine_c
+ore
+(EngineCore pid=412)     raise e
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1318, in run_engine_c
+ore
+(EngineCore pid=412)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=412)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=412)     return func(*args, **kwargs)
+(EngineCore pid=412)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1074, in __init__
+(EngineCore pid=412)     super().__init__(
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 143, in __init__
+(EngineCore pid=412)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=412)                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=412)     return func(*args, **kwargs)
+(EngineCore pid=412)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 304, in _initialize_k
+v_caches
+(EngineCore pid=412)     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=412)                        ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/core/kv_cache_utils.py", line 2190, in get_
+kv_cache_configs
+(EngineCore pid=412)     _check_enough_kv_cache_memory(
+(EngineCore pid=412)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/core/kv_cache_utils.py", line 778, in _chec
+k_enough_kv_cache_memory
+(EngineCore pid=412)     raise ValueError(
+(EngineCore pid=412) ValueError: To serve at least one request with the model's max seq len (24576), (15.17 GiB KV cache
+ is needed, which is larger than the available KV cache memory (9.44 GiB). Based on the available memory, the estimated
+maximum model length is 11232. Try increasing `gpu_memory_utilization` (which also controls CPU memory on the CPU backen
+d) or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conservi
+ng_memory/ for more details.
+[rank0]:[W831 18:56:21.282074979 ProcessGroupNCCL.cpp:1624] Warning: WARNING: destroy_process_group() was not called bef
+ore program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#s
+hutdown (function operator())
+(APIServer pid=1) INFO 08-31 18:56:22 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore
+(APIServer pid=1) Traceback (most recent call last):
+(APIServer pid=1)   File "/usr/local/bin/vllm", line 10, in <module>
+(APIServer pid=1)     sys.exit(main())
+(APIServer pid=1)              ^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/cli/main.py", line 97, in main
+(APIServer pid=1)     args.dispatch_function(args)
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/cli/serve.py", line 152, in cmd
+(APIServer pid=1)     uvloop.run(run_server(args))
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=1)     return __asyncio.run(
+(APIServer pid=1)            ^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 195, in run
+(APIServer pid=1)     return runner.run(main)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+(APIServer pid=1)     return self._loop.run_until_complete(task)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=1)     return await main
+(APIServer pid=1)            ^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 764, in r
+un_server
+(APIServer pid=1)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 778, in r
+un_server_worker
+(APIServer pid=1)     async with build_async_engine_client(
+(APIServer pid=1)                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=1)     return await anext(self.gen)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 132, in b
+uild_async_engine_client
+(APIServer pid=1)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=1)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=1)     return await anext(self.gen)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 168, in b
+uild_async_engine_client_from_engine_args
+(APIServer pid=1)     async_llm = AsyncLLM.from_vllm_config(
+(APIServer pid=1)                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/async_llm.py", line 220, in from_vllm_c
+onfig
+(APIServer pid=1)     return cls(
+(APIServer pid=1)            ^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/async_llm.py", line 149, in __init__
+(APIServer pid=1)     self.engine_core = EngineCoreClient.make_async_mp_client(
+(APIServer pid=1)                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=1)     return func(*args, **kwargs)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 139, in make_asyn
+c_mp_client
+(APIServer pid=1)     return AsyncMPClient(*client_args)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(APIServer pid=1)     return func(*args, **kwargs)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 987, in __init__
+(APIServer pid=1)     super().__init__(
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 609, in __init__
+(APIServer pid=1)     with launch_core_engines(
+(APIServer pid=1)          ^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+(APIServer pid=1)     next(self.gen)
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1194, in launch_core_en
+gines
+(APIServer pid=1)     wait_for_engine_startup(
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1253, in wait_for_engin
+e_startup
+(APIServer pid=1)     raise RuntimeError(
+(APIServer pid=1) RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ bash tools/push_latest_evidence.sh
+latest staging dir: 20260831T164655Z
+copied 15 files to evidence/
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+Already up to date.
+nothing new to commit (evidence already up to date)
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ cp <your_gemma4_log> /ephemeral/hr/Handoffrepair/evidence/serve_gemm
+a4-31b_optionB_$(date +%Y%m%dT%H%M%SZ).log
+cd /ephemeral/hr/Handoffrepair && git pull --no-rebase origin master && git add evidence/ && git commit -m "gemma4 optio
+n-B engine-core init failure log" && git push
+-bash: your_gemma4_log: No such file or directory
+From github.com:WalterW3030/Handoffrepair
+ * branch            master     -> FETCH_HEAD
+Already up to date.
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        quick_probe_out/
+        staging_run.log
+
+nothing added to commit but untracked files present (use "git add" to track)
+(base) ubuntu@h800-8-1:/ephemeral/hr/Handoffrepair$ tmux capture-pane -pS - > /ephemeral/hr/Handoffrepair/evidence/serve
+_gemma4-31b_optionB_$(date -u +%Y%m%dT%H%M%SZ).log
+
