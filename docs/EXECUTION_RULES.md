@@ -92,6 +92,12 @@ Added 2026-08-28 per user instruction (after context-length and model-fit failur
 - **At experiment DESIGN time (before any GPU/staging run), analyze EVERY model and EVERY parameter that significantly affects performance or validity** — grounded in researched data (benchmark papers, model cards, spec sheets), not assumptions.
 - This includes, minimum: context-length requirement from the *benchmark's actual trajectory lengths*; per-model memory (weights+KV+activation from real specs); tool-calling/reasoning capability per model; decoding parameters (temperature, max_tokens, penalties); and the workload's token/turn profile.
 - **Record the analysis and the resulting parameter choices in the repo BEFORE implementing**, so choices are justified by data and auditable.
+- **Label every audit number by source class (added 2026-08-31, after M15):**
+  MEASURED (our logs), SPEC (official spec sheet/repo), or ESTIMATED (derived by me —
+  derivation shown). An ESTIMATED number that gates a go/no-go decision must be
+  validated by a cheap probe (e.g. a dry-run launch at the target config) BEFORE the
+  full staging/main run commits hours to it. Never present estimates and measurements
+  in one table at one confidence level.
 - The trigger for this rule is the *design* step — never let a parameter reach staging untested-by-analysis. (We let max_model_len=8192 and a 70B model reach staging without checking ToolSandbox's real ~11.6k-token episodes or the 70B's memory fit. Both failed. This rule exists because of that.)
 
 ## R14 — No fabricated structure: every enumerated item must be independently defensible
