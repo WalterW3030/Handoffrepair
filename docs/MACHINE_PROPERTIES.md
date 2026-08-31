@@ -183,3 +183,23 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   Same latent pattern found and fixed in serve_qwen3_32b.sh:20 and serve_qwen3_8b.sh:19.
   NOTE: quick_probe.sh has NO gemma4 transformers pin (Option B); for gemma4 use
   staging_collect.sh or serve_gemma4_31b.sh, not quick_probe.
+
+## 2026-08-31 — gemma4 Option-B follow-on failure: KV cache shortfall at 24576 (spec error in R12 audit)
+- Evidence: evidence/serve_gemma4-31b_optionB_20260831T200553Z.log lines 649-700.
+  EngineCore ValueError: KV needed 15.17 GiB for max_model_len 24576, only 9.44 GiB available
+  (est. max 11232 at util 0.90). The transformers==5.14.1 pin WORKED (config load passed;
+  failure moved to KV init) — this is a NEW, separate failure.
+- Root cause = MY SPEC ERROR in the 2026-08-29 audit: I estimated gemma4 KV as "~50 KiB/token
+  effective" (hybrid sliding-window) → ~1.5 GiB @24576. Actual requirement = 15.17 GiB @24576
+  (~633 KiB/token effective) — vLLM apparently allocates full-length KV for the global-attention
+  layers (and/or other overhead), not the hybrid-saving figure I assumed. Weights+overhead
+  ≈ 71.27 - 9.44 = 61.83 GiB as predicted; the KV side was wrong by ~10x.
+- Fix options (R14 pre-screen):
+  A. gemma4 ctx 24576 at util 0.95: KV pool ~13 GiB < 15.17 → still FAILS pre-screen. Rejected.
+  B. uniform ctx 16384 for ALL models: gemma4 KV ~9.5-10.1 GiB vs pool 9.44 — still borderline/
+     likely fail; also re-truncates workload tail (needs util 0.92+ to pass, then Qwen margins shrink).
+  C. gemma4-only KV reduction at 24576: kv-cache-dtype fp8 (KV ~7.6 GiB < 9.44) or
+     --max-num-seqs small. Keeps uniform ctx; gemma4-only KV precision delta logged in manifest.
+  D. swap gemma4-31b for a model that fits 24576 on one card.
+- Local mistakes file: M15 entry (effective-KV assumption from architecture intuition instead of
+  measured/empirical KV spec; audit math treated estimates as measurements).
