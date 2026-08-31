@@ -20,11 +20,11 @@ calibrated_pair_2:
   # tool-caller (Qwen-Agent/hermes parser). Instruct-2507 branch chosen over the original for its
   # 256K native context and better instruction-following/tool-use (Qwen model card, Jul 2025).
   source: {hf_id: Qwen/Qwen3-30B-A3B-Instruct-2507,
-           revision: "TO_PIN",               # pin at staging: hf API revision + per-file sha256
+           revision: "0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe",
            precision: bf16, quantization: none,
            sha256: "configs/weight_sha256.lock#Qwen/Qwen3-30B-A3B-Instruct-2507",
            gated: false, license: apache-2.0,
-           tool_calling: "hermes parser (Qwen3 chat template has native Hermes-style tool support)"}
+           tool_calling: "uniform shim (serving/tool_call_shim.py), decision 2026-08-29"}
   target: {hf_id: Qwen/Qwen3-32B, revision: "9216db5781bf21249d130ec9da846c4624c16137",
            precision: fp8, quantization: "vllm --quantization fp8 (dynamic)",
            sha256: "configs/weight_sha256.lock#Qwen/Qwen3-32B", gated: false, license: apache-2.0}
