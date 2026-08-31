@@ -189,6 +189,23 @@ for key in "${KEYS[@]}"; do
   # --ipc=host is REQUIRED by the vLLM OpenAI image (PyTorch uses shared memory
   # for worker IPC). --gpus device=$GPU_ID alone isolates to that one GPU; do
   # NOT also set CUDA_VISIBLE_DEVICES (can confuse device mapping).
+  # gemma4 (OPTION B, 2026-08-31): pin transformers==5.14.1 in-container — the v0.27.1
+  # image ships transformers>=5.15 whose head_dim heterogeneity guard crashes gemma4
+  # at startup (upstream #51744/#52768). Other models keep the frozen image untouched.
+  if [ "$key" = "gemma4-31b" ]; then
+    docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \
+      --ipc=host \
+      -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \
+      -v "$HF_HOME:/root/.cache/huggingface" \
+      -p "$PORT:8000" \
+      ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+      --entrypoint /bin/bash \
+      "$IMAGE" \
+      -c 'pip install --no-cache-dir -q "transformers==5.14.1" && exec vllm serve \
+        '"$model"' --served-model-name '"$key"' \
+        --max-model-len 24576 --gpu-memory-utilization 0.90 --enforce-eager' \
+      > /dev/null || stop "docker run failed for $key"
+  else
   docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \
     --ipc=host \
     -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \
@@ -199,6 +216,7 @@ for key in "${KEYS[@]}"; do
     "$model" --served-model-name "$key" \
     --max-model-len 24576 --gpu-memory-utilization 0.90 --enforce-eager \
     > /dev/null || stop "docker run failed for $key"
+  fi
 
   # Always capture logs + exit code + OOMKilled, even if the container dies
   # before the first poll — this is what finally reveals the REAL cause.

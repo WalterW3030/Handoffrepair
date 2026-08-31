@@ -166,3 +166,13 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   C. vllm/vllm-openai:v0.26.0 image for gemma4 (issue says unaffected) — but older base CUDA,
      needs re-validation of VLLM_ENABLE_CUDA_COMPATIBILITY on R570.
 - Open risk: recipe docs' `gemma4-cu130` tag is mutable; must pin by digest at staging time.
+
+## 2026-08-31 — gemma4 fix APPLIED: Option B (transformers==5.14.1 in-container)
+- Decision: B active; A (vllm/vllm-openai:gemma4-cu130, digest-pin required) recorded as
+  fallback-only in docs/GEMMA4_FIX_OPTIONS.md; C rejected at pre-screen.
+- serve_gemma4_31b.sh rewritten: --entrypoint /bin/bash -c 'pip install transformers==5.14.1
+  && exec vllm serve ...'; stale --reasoning-parser/--chat-template flags removed (uniform
+  shim since 2026-08-29); old /templates mount dropped.
+- scripts/staging_collect.sh: gemma4 branch now uses the same entrypoint-shim launch.
+- Note for env.txt evidence: gemma4's in-container transformers will read 5.14.1, differing
+  from the other three models' image manifest — recorded here and in GEMMA4_FIX_OPTIONS.md.
