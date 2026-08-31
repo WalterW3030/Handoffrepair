@@ -145,3 +145,24 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - Resource audit @16384, util 0.90, 79.19 GiB card (need ≥7.9 GiB free headroom):
   qwen3-32b +11.79G OK; qwen3-8b +59.44G OK; Qwen3-30B-A3B +16.19G OK;
   gemma4-31b +13.66G OK. All four pass R12.
+
+## 2026-08-31 — gemma4-31b staging launch failure: vLLM 0.27.1 x transformers >= 5.15 incompatibility
+- Evidence: staging_evidence/20260831T164655Z/serve_gemma4-31b.log —
+  `AmbiguousGlobalPerLayerAttributeError: 'head_dim' is a per-layer attribute` raised in
+  vllm/transformers_utils/model_arch_config_convertor.py:608 get_head_size(), exit_code=1,
+  oom_killed=false. Same evidence dir shows qwen3-32b / qwen3-8b / qwen3-30b-a3b ALL HEALTHY
+  (smoke OK, peaks 75013/75471/73819 MiB under the 81087 MiB card). Failure is gemma4-specific.
+- Root cause (upstream-verified, not guessed): transformers >= 5.15 turns per-layer attributes
+  (head_dim) into guarded heterogeneity attributes; vLLM 0.27.1's config converter reads the
+  global `head_dim` and crashes. vLLM issue #51744 (identical traceback; reporter: downgrading
+  transformers to 5.14.1 in the SAME image resolves it) and #52768 ("v0.27.1 raises; does NOT
+  happen on v0.26.0"). Our pinned image vllm/vllm-openai@sha256:0a51ea... (v0.27.1, CUDA 13.0.2)
+  ships the incompatible transformers.
+- Verified candidate fixes (in preference order):
+  A. dedicated official image `vllm/vllm-openai:gemma4-cu130` (vLLM official Gemma4 recipe, CUDA 13.0),
+     gemma4 ONLY, other 3 models unchanged on the pinned image;
+  B. same pinned image + `pip install --no-cache-dir "transformers==5.14.1"` at container start
+     (entrypoint shim), gemma4 only;
+  C. vllm/vllm-openai:v0.26.0 image for gemma4 (issue says unaffected) — but older base CUDA,
+     needs re-validation of VLLM_ENABLE_CUDA_COMPATIBILITY on R570.
+- Open risk: recipe docs' `gemma4-cu130` tag is mutable; must pin by digest at staging time.
