@@ -176,3 +176,10 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - scripts/staging_collect.sh: gemma4 branch now uses the same entrypoint-shim launch.
 - Note for env.txt evidence: gemma4's in-container transformers will read 5.14.1, differing
   from the other three models' image manifest — recorded here and in GEMMA4_FIX_OPTIONS.md.
+
+## 2026-08-31 — trailing-comment-after-backslash bug class (quick_probe + serve_qwen3_32b/8b)
+- quick_probe.sh:85 had `-e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \  # comment` — backslash escapes
+  the newline, comment swallows the continuation → "invalid reference format / -v: command not found".
+  Same latent pattern found and fixed in serve_qwen3_32b.sh:20 and serve_qwen3_8b.sh:19.
+  NOTE: quick_probe.sh has NO gemma4 transformers pin (Option B); for gemma4 use
+  staging_collect.sh or serve_gemma4_31b.sh, not quick_probe.

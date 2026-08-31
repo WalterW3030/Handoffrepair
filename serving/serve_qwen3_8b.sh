@@ -16,7 +16,7 @@ exec docker run --rm --name serve_qwen3_8b --gpus '"'"device=$GPU_ID"'"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   --ipc=host \
-  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \  # driver R570 (CUDA≤12.8) vs image CUDA 13.0.2
+  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \
   "$IMAGE" \
   Qwen/Qwen3-8B \
   --revision b968826d9c46dd6066d109eabc6255188de91218 \

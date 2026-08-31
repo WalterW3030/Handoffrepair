@@ -82,7 +82,7 @@ fi
 # --gpus device=$GPU_ID alone isolates to that GPU; no CUDA_VISIBLE_DEVICES.
 docker run -d --name "$NAME" --gpus "\"device=$GPU_ID\"" \
   --ipc=host \
-  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \  # driver R570 (CUDA≤12.8) vs image CUDA 13.0.2 — documented bridge
+  -e VLLM_ENABLE_CUDA_COMPATIBILITY=1 \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" \
   ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
