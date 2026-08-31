@@ -60,6 +60,12 @@ Added 2026-08-22 after the qwen3-32b crash-loop failure (4 rounds, zero real log
 - **Verify the evidence channel actually works before trusting it.** If a diagnostic file is supposed to contain the answer, confirm it is non-empty and non-stale *before* concluding anything from it. (We trusted a 65-byte "No such container" stub as if it were a real crash log — for 4 rounds.)
 - **When a hypothesis fails, say so explicitly, drop it, and record what the evidence actually shows** (e.g. `exit_code=1, oom_killed=false` ⇒ config/arg error, *not* OOM).
 
+- **Three-strike clause (added 2026-08-31, after M16):** when a SECOND failure traces to
+  the same underlying assumption as a prior failure, STOP patching symptoms; re-derive that
+  assumption from first principles using MEASURED data before proposing any further option.
+  A third failure from the same assumption means the option-generation process itself is
+  compromised — restart from the assumption level, not the symptom level.
+
 ## R10 — No over-promising; capture the signal at its source, not through a proxy
 Added 2026-08-22 after the same loop persisted post-R9 (user: "you kept looping on similar behavior… untrustworthy… never really break").
 - **No confident-but-unverified language.** Never say "this command gets the real error" / "one command to fix" / "must work now". State the hypothesis, the test, and what each outcome would mean. Report probability, not certainty.
