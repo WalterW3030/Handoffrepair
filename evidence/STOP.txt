@@ -1,0 +1,1 @@
+STOP: server died for gemma4-31b — see staging_evidence/20260831T164655Z/serve_gemma4-31b.log and staging_evidence/20260831T164655Z/diag_gemma4-31b.txt (exit_code/oom_killed)

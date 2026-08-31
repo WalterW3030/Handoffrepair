@@ -1,0 +1,3 @@
+qwen3-32b peak_mib=75013
+qwen3-8b peak_mib=75471
+qwen3-30b-a3b peak_mib=73819

@@ -1,0 +1,3 @@
+exit_code=0
+oom_killed=false
+error=
