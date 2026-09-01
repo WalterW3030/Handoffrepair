@@ -203,7 +203,7 @@ for key in "${KEYS[@]}"; do
       "$IMAGE" \
       -c 'pip install --no-cache-dir -q "transformers==5.14.1" && exec vllm serve \
         '"$model"' --served-model-name '"$key"' \
-        --max-model-len 24576 --gpu-memory-utilization 0.90 --enforce-eager' \
+        --max-model-len 16384 --gpu-memory-utilization 0.92 --enforce-eager' \
       > /dev/null || stop "docker run failed for $key"
   else
   docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \
@@ -214,7 +214,7 @@ for key in "${KEYS[@]}"; do
     ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
     "$IMAGE" \
     "$model" --served-model-name "$key" \
-    --max-model-len 24576 --gpu-memory-utilization 0.90 --enforce-eager \
+    --max-model-len 16384 --gpu-memory-utilization 0.92 --enforce-eager \
     > /dev/null || stop "docker run failed for $key"
   fi
 

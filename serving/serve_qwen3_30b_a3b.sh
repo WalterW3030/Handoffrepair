@@ -40,4 +40,4 @@ exec docker run --rm --name serve_qwen3_30b_a3b --gpus '"'"device=$GPU_ID"'"' \
   Qwen/Qwen3-30B-A3B-Instruct-2507 \
   "${REV_ARGS[@]}" \
   --served-model-name qwen3-30b-a3b \
-  --max-model-len 24576 --gpu-memory-utilization 0.90 --enforce-eager \
+  --max-model-len 16384 --gpu-memory-utilization 0.92 --enforce-eager \

@@ -5,10 +5,12 @@ decoding:
   max_new_tokens: 1024
   seed_from: configs/seeds.yaml
 context:
-  max_model_len: 24576        # user decision 2026-08-29 (choice 1-A): workload max ~20.6k tokens
-                              # (ToolSandbox 30-turn cap + ~800-tok repair contract) + ~19% margin.
-                              # Uniform across ALL models (per-model ctx would confound the comparison).
-                              # Binding model qwen3-32b: +9.79 GiB headroom at util 0.90 (passes R12).
+  max_model_len: 16384        # 2026-09-01 (R0/M17): reverted from 24576 — gemma4 KV measured at
+                              # 0.632 GiB/1k ctx -> 10.36 GiB @16384; at util 0.92 pool = 11.07 GiB,
+                              # fits with ~0.7 GiB margin. 24576 infeasible for gemma4 (15.17 needed
+                              # vs 9.44 avail; sliding-window saving probe-falsified 2026-09-01).
+                              # Uniform across ALL models. Tail episodes >16k truncate — accepted
+                              # under feasibility-first precedence (R0); rate measured in staging.
   note: "16K covers ToolSandbox multi-turn trajectories with headroom; raising it post-freeze
          requires a new tag"
 timeouts:
@@ -32,6 +34,7 @@ tool_parsers:
   google/gemma-4-31B-it: uniform_shim
 serving:
   engine: vllm
-  gpu_memory_utilization: 0.90   # aligned with all serving/staging launchers (R12 headroom)
+  gpu_memory_utilization: 0.92   # 2026-09-01: raised so gemma4's KV pool (11.07 GiB) clears its
+                              # measured 10.36 GiB need at 16384. Qwen models unaffected (huge margins).
   enable_prefix_caching: true
   enforce_eager: false

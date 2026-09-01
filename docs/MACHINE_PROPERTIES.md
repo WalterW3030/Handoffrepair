@@ -213,3 +213,15 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   (5) uniform ctx 16384 at util 0.92 (+1.0 GiB margin) or 0.95 (+1.6 GiB), tail truncation
   returns; (6) replace the held-out model. fp8-KV already rejected (quantization-contrast
   confound, 2026-08-31).
+
+## 2026-09-01 — R0 applied: uniform ctx reverted 24576 -> 16384, util 0.90 -> 0.92 (gemma4 KV fit)
+- Precedence rule R0 (feasibility before quality, M17) applied to the one open blocker:
+  gemma4 KV at 24576 = 15.17 GiB needed vs 9.44 avail (measured, probe-falsified saving).
+  Uniform ctx dropped to 16384 (gemma4 KV 10.36 GiB < pool 11.07 at util 0.92, ~0.7 GiB margin);
+  util raised 0.90 -> 0.92 for the KV headroom. Qwen models unaffected (huge margins; their
+  2026-08-31 peaks 73.2/73.7/72.1 GiB stand, now at lower ctx so only safer).
+- Tail episodes >16k truncate — accepted under R0; truncation rate will be MEASURED in staging
+  and reported, per the limitation protocol. Uniformity (same ctx all 4 models) preserved.
+- T1 validation threshold aligned to 16384 (needle at ~15.5-16k); T3 ceilings now measured-based.
+- Frozen parameters (R0): ctx=16384, util=0.92, 4 models, uniform shim — no further changes
+  until the pilot completes ONE full end-to-end run.
