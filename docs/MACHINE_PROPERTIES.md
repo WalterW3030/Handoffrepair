@@ -241,3 +241,17 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   (a) ctx 13312 uniform at util 0.95 — gemma4 margin +0.17 GiB, thin;
   (b) ctx 12288 uniform at util 0.95 — gemma4 margin +0.35 GiB, safer; truncation tail grows;
   (c) replace gemma4 held-out with a fitting model, keep 16384.
+
+## 2026-09-01 — gemma4 KV: root mechanism identified; probe was mis-designed (my error)
+- vLLM hybrid-KV docs (v0.27.1): sliding-window layers get windowed allocation ONLY via the
+  eviction machinery that prefix caching drives. My 2026-09-01 probe used
+  --no-enable-prefix-caching, which DISABLES the sliding-window saving — the probe tested the
+  wrong condition and its "falsification" was of a config that can't save memory by design.
+- gemma4's two layer groups differ in kv_hidden_size (sliding 16kv x 256 = 4096 vs global
+  4kv x 512 = 2048) so they can't merge (docs Case 2/3) — but each still gets its own
+  allocation strategy WITH prefix caching on. The 13.76/15.17 GiB needs were measured with the
+  saving off (my probe) or partially engaged.
+- OPEN measurement (do NOT trust my interpolation — two close points overfit, M15/M16 lesson):
+  gemma4 at ctx 16384, util 0.90, prefix caching ON (default) — read the reported
+  "Available KV cache memory" and "Maximum concurrency" lines. Until that number exists,
+  every ctx/util recommendation for gemma4 is an ESTIMATE, not a measurement (R13 label).
