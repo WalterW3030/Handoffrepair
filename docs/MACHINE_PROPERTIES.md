@@ -203,3 +203,13 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   D. swap gemma4-31b for a model that fits 24576 on one card.
 - Local mistakes file: M15 entry (effective-KV assumption from architecture intuition instead of
   measured/empirical KV spec; audit math treated estimates as measurements).
+
+## 2026-09-01 — gemma4 probe: --no-enable-prefix-caching does NOT engage sliding-window KV saving
+- Evidence: evidence/probe_gemma4_noprefixcache_20260901T142912Z.log — same ValueError
+  (15.17 GiB needed vs 9.44 available) with prefix caching OFF. Hypothesis "hybrid allocator
+  saving disabled by prefix caching" is FALSIFIED by measurement (M15 probe gate working).
+- Consequence: gemma4-31b cannot serve ctx 24576 on one 79.19 GiB card at util 0.90 in this
+  vLLM build, regardless of prefix-caching or the transformers pin. Remaining real options:
+  (5) uniform ctx 16384 at util 0.92 (+1.0 GiB margin) or 0.95 (+1.6 GiB), tail truncation
+  returns; (6) replace the held-out model. fp8-KV already rejected (quantization-contrast
+  confound, 2026-08-31).
