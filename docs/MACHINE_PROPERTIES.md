@@ -267,3 +267,11 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   reverts to util 0.90 for gemma4. If N < 1.0x, gemma4 cannot do 16384 at 0.90 in this build
   and the choice is ctx 12288 (measured-safe) vs replacing gemma4.
 - I will not ship another ctx/util recommendation for gemma4 until this number is measured.
+
+## 2026-09-01 — decisive probe returned EMPTY log (0 lines)
+- evidence/probe_gemma4_16384_util090_prefixon_20260901T205425Z.log is 0 bytes: container
+  produced no output. Either docker run failed silently or capture happened during the
+  pip-install phase (transformers==5.14.1 download, ~1-2 min, no stdout until vllm starts).
+- Next: re-check container state on machine (docker ps -a; if still running, wait for the
+  pip install + model load, then capture). If container is gone/exited, the docker run itself
+  failed and its stderr was lost (run without -d to see it, or check `docker ps -a` exit code).
