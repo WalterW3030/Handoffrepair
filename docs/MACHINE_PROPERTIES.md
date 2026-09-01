@@ -225,3 +225,19 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - T1 validation threshold aligned to 16384 (needle at ~15.5-16k); T3 ceilings now measured-based.
 - Frozen parameters (R0): ctx=16384, util=0.92, 4 models, uniform shim — no further changes
   until the pilot completes ONE full end-to-end run.
+
+## 2026-09-01 — gemma4 third failure: 16384/0.92 still short (KV 13.76 need vs 11.03 pool); linear KV model falsified
+- Evidence: staging_evidence/20260901T150048Z/serve_gemma4-31b.log. Qwen x3 HEALTHY at new
+  settings (peaks 76681/77039/75435 MiB). gemma4: Available KV 11.03 GiB, need 13.76 GiB,
+  vLLM est. max seq len 13120. My linear KV model (M15-derived) was WRONG again: KV need did
+  not scale with ctx (15.17@24576 -> 13.76@16384); there is a large fixed/per-batch component.
+- RELIABLE anchor (vLLM's own estimate, not my extrapolation): max ctx at util 0.90 = 11232.
+  Interpolating the measured (util,pool) and (ctx,need) points: util 0.95 -> pool 13.40 GiB
+  -> max ctx ~14.4k; util 0.97 -> pool ~14.85 -> max ctx ~16.6k.
+- gemma4 feasibility conclusion: at ctx 16384 gemma4 needs util ~0.97 (R12-hostile, ~2.4 GiB
+  total card headroom); at util 0.95 the max feasible ctx is ~14.3k (margin +0.17 GiB — thin).
+  gemma4 is the binding constraint for ANY ctx above ~13k on this card/build.
+- Options recorded for user decision (pre-screened):
+  (a) ctx 13312 uniform at util 0.95 — gemma4 margin +0.17 GiB, thin;
+  (b) ctx 12288 uniform at util 0.95 — gemma4 margin +0.35 GiB, safer; truncation tail grows;
+  (c) replace gemma4 held-out with a fitting model, keep 16384.
