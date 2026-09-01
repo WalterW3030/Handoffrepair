@@ -52,6 +52,23 @@ When a log, evidence bundle, or error output is needed for checking, **never pas
 - The repo `.gitignore` keeps `staging_evidence/` raw dirs and bulk tarballs out of git by default — copy the *specific* file needed into `evidence/`.
 - Applies to all future file-checking tasks, not just staging.
 
+
+## R0 — Feasibility and stability take precedence over ALL other rules (added 2026-09-01, user instruction, M17)
+This rule outranks every other rule including R12/R13's "quality" ambitions. The pilot had zero
+successful end-to-end runs while the design was repeatedly optimized for quality (bigger model,
+longer ctx, tighter uniformity) — each optimization added a machine constraint, constraints
+compounded, and the machine discovered the empty feasible set one crash per day.
+- **Design sequence is BASELINE -> MEASURE -> EXTEND, never ideal-first.** The first run of any
+  pipeline uses the most conservative configuration that can still answer the research question
+  (smallest adequate models, shortest valid ctx, fewest moving parts). Only after that run has
+  SUCCEEDED end-to-end may any parameter be raised — one at a time, each gated by a cheap probe.
+- **Any parameter that has caused a failure is FROZEN at its last-working value** until the
+  pilot's first complete run exists. Never trade a working configuration for a better one before
+  the working one has produced data.
+- **Feasibility is a MEASURED property, not a designed one.** A config "works" only when it has
+  produced a completed run on the target machine; until then it is unproven regardless of how
+  good the audit math looks.
+
 ## R9 — Evidence before theory; break loops by widening, not repeating
 Added 2026-08-22 after the qwen3-32b crash-loop failure (4 rounds, zero real logs, wrong OOM theory).
 - **Never assert a cause without evidence.** State it as a hypothesis with what would confirm/refute it. Do not present a guess as a diagnosis.
