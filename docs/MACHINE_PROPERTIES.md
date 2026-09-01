@@ -255,3 +255,15 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   gemma4 at ctx 16384, util 0.90, prefix caching ON (default) — read the reported
   "Available KV cache memory" and "Maximum concurrency" lines. Until that number exists,
   every ctx/util recommendation for gemma4 is an ESTIMATE, not a measurement (R13 label).
+
+## 2026-09-01 (cont) — gemma4: the ONE decisive measurement still missing
+- Default staging config (16384/0.92, prefix caching ON) already failed: avail 11.03 < need
+  13.76. So even in the correct (prefix-caching-on) config the windowed saving does not fully
+  close the gap in this vLLM build. The remaining unknown is how much it closes at 0.90.
+- DECISIVE MEASUREMENT (single source of truth, replaces all extrapolation): gemma4 at
+  ctx 16384, util 0.90, prefix caching ON (staging default, transformers pin active) — read
+  "Available KV cache memory" (A) and the KV "needed" line or "Maximum concurrency for 16384
+  tokens per request: Nx" (N). If N >= 1.0x the model serves at 16384/0.90 and the pilot
+  reverts to util 0.90 for gemma4. If N < 1.0x, gemma4 cannot do 16384 at 0.90 in this build
+  and the choice is ctx 12288 (measured-safe) vs replacing gemma4.
+- I will not ship another ctx/util recommendation for gemma4 until this number is measured.
