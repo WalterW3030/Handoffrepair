@@ -281,3 +281,19 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   continuations AND `docker run ... > /dev/null`. Paste truncated the command; /dev/null hid
   the docker error. Container never created; user saw instant silent end. Fix: heredoc-script
   form + no /dev/null on the decisive command + explicit success/failure marker.
+
+## 2026-09-02 — gemma4 decisive probe (paste-safe): 16384/0.90 prefix-on STILL fails; KV need is ctx-floor-dominated
+- Evidence: evidence/probe_gemma4_decisive_20260902T023240Z.log. Available KV 9.44 GiB,
+  need 13.76 GiB at ctx 16384 — IDENTICAL need to the 0.92 run (13.76). Prefix caching ON
+  (default) did NOT reduce the need. The sliding-window saving does not engage for gemma4 in
+  this vLLM v0.27.1 build under any tested config (prefix on or off, util 0.90 or 0.92).
+- KV need is essentially ctx-INDEPENDENT over 16384..24576 (13.76 both) => dominated by a
+  fixed floor (per-batch/workspace allocation in this build), not per-token scaling. Therefore
+  NO ctx reduction within a useful range fixes gemma4 on this card/build — even tiny ctx still
+  pays the ~13.7 GiB floor. gemma4 needs pool >= 13.76 GiB => util >= (61.83+13.76)/79.19
+  = 0.954, leaving ~2.4 GiB total card headroom (R12-hostile).
+- CONCLUSION (measured, not extrapolated): gemma4-31b cannot serve a useful ctx on one 79.19
+  GiB card in this vLLM build with acceptable headroom. Options for the held-out arm:
+  (A) util 0.96 + ctx 16384 (fits, ~2 GiB headroom — tight, stability risk);
+  (B) replace gemma4 with a model that fits 16384 comfortably (held-out identity changes);
+  (C) fp8 KV for gemma4 only (rejected 2026-08-31: quantization-contrast confound).
