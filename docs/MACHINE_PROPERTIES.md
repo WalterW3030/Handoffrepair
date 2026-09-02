@@ -339,3 +339,17 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - tmux session killed alongside = anomaly (vLLM crash does not kill host tmux) — points to
   machine-level reclaim, but unverifiable without the log the --rm erased.
 - Fix applied: --rm dropped from all 4 serve_*.sh so dead containers persist for docker logs.
+
+## 2026-09-02 — gemma4 engine-core death root cause: cudaErrorDevicesUnavailable (GPU busy/gone), NOT model/memory
+- Evidence: evidence/gemma4_death_20260902T114054Z.log — fp8 KV accepted ("Using fp8 data type
+  to store kv cache"), engine began init, then torch.AcceleratorError: CUDA error:
+  CUDA-capable device(s) is/are busy or unavailable at MemorySnapshot/get_memory_info.
+  This is BEFORE weight load — the GPU device itself was unavailable to the container.
+- The earlier "tmux session killed" is consistent: the shared machine's GPU was reclaimed /
+  another tenant took the device mid-launch (M9 pattern: shared-machine state not re-checked).
+- NOT a config error: the identical config served fine in the fp8 probe (1.37x concurrency).
+  The failure is environmental (GPU availability at launch time), not the model/KV/fp8.
+- R3 violation in MY probe/serve guidance: the serve scripts auto-pick the freest GPU at
+  launch, but if a tenant grabs the device BETWEEN selection and CUDA init (or the device is
+  in a busy/exclusive state), the container sees "device unavailable". Need: re-check GPU
+  state at launch + retry-once on cudaErrorDevicesUnavailable, not a blind relaunch.
