@@ -189,9 +189,12 @@ for key in "${KEYS[@]}"; do
   # --ipc=host is REQUIRED by the vLLM OpenAI image (PyTorch uses shared memory
   # for worker IPC). --gpus device=$GPU_ID alone isolates to that one GPU; do
   # NOT also set CUDA_VISIBLE_DEVICES (can confuse device mapping).
-  # gemma4 (OPTION B, 2026-08-31): pin transformers==5.14.1 in-container — the v0.27.1
-  # image ships transformers>=5.15 whose head_dim heterogeneity guard crashes gemma4
-  # at startup (upstream #51744/#52768). Other models keep the frozen image untouched.
+  # gemma4 (OPTION B + fp8 KV, 2026-09-02): transformers==5.14.1 pin (head_dim fix) AND
+  # --kv-cache-dtype fp8 (measured: bf16 KV needs 13.76 GiB > pool; fp8 halves it ->
+  # 1.37x concurrency at 16384/0.90, probe evidence probe_gemma4_fp8kv_20260902T025920Z.log).
+  # fp8 KV is NOT an experiment variable (pair-2 is bf16/fp16; fp8 only appears as pair-1
+  # target serving quant) — a documented per-arm serving config on the held-out arm, not a
+  # confound. Other models keep the frozen image + bf16 KV untouched.
   if [ "$key" = "gemma4-31b" ]; then
     docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \
       --ipc=host \
@@ -203,7 +206,7 @@ for key in "${KEYS[@]}"; do
       "$IMAGE" \
       -c 'pip install --no-cache-dir -q "transformers==5.14.1" && exec vllm serve \
         '"$model"' --served-model-name '"$key"' \
-        --max-model-len 16384 --gpu-memory-utilization 0.92 --enforce-eager' \
+        --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager --kv-cache-dtype fp8' \
       > /dev/null || stop "docker run failed for $key"
   else
   docker run -d --cidfile "$cidfile" --name "staging_$key" --gpus "\"device=$GPU_ID\"" \

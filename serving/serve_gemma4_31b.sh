@@ -36,4 +36,4 @@ exec docker run --rm --name serve_gemma4_31b --gpus '"'"device=$GPU_ID"'"' \
   google/gemma-4-31B-it \
   --revision 842da3794eaa0b77d5f08bae87a17459d91ff475 \
   --served-model-name gemma4-31b \
-  --max-model-len 16384 --gpu-memory-utilization 0.92 --enforce-eager'
+  --max-model-len 16384 --gpu-memory-utilization 0.90 --enforce-eager --kv-cache-dtype fp8'

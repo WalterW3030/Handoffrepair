@@ -308,3 +308,15 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   pair-1 target's serving quant. gemma4 held-out with fp8 KV = documented serving choice
   (official vLLM gemma4 recipe). fp8 KV halves the 13.76 GiB need to ~6.9 GiB -> fits at util
   0.90 with real margin. gemma4 CAN stay, feasibly, at uniform 16384.
+
+## 2026-09-02 — gemma4 FEASIBLE: fp8 KV, measured 1.37x concurrency at 16384/0.90
+- Evidence: evidence/probe_gemma4_fp8kv_20260902T025920Z.log — "Available KV 9.41 GiB",
+  "Maximum concurrency for 16,384 tokens per request: 1.37x", "Application startup complete."
+  bf16 KV need 13.76 GiB (measured, ctx-independent floor) -> fp8 halves below the pool.
+- Config locked: gemma4 launcher + staging branch now use --kv-cache-dtype fp8, util reverted
+  to 0.90 (no longer needs 0.92 — the fp8 margin covers it). transformers==5.14.1 pin kept
+  (head_dim fix). Qwen x3 unchanged (bf16 KV, util 0.92, ctx 16384).
+- Per-arm serving note (manifest): gemma4 held-out arm serves with fp8 KV cache; not an
+  experiment variable (pair-2 is bf16/fp16; fp8 appears only as pair-1 target serving quant).
+- ALL FOUR MODELS NOW FEASIBLE at uniform ctx 16384. This is the first fully-runnable config.
+  R0: parameters frozen — ctx 16384, util 0.90 (gemma4 fp8) / 0.92 (Qwen), uniform shim.
