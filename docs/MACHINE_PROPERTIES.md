@@ -297,3 +297,14 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   (A) util 0.96 + ctx 16384 (fits, ~2 GiB headroom — tight, stability risk);
   (B) replace gemma4 with a model that fits 16384 comfortably (held-out identity changes);
   (C) fp8 KV for gemma4 only (rejected 2026-08-31: quantization-contrast confound).
+
+## 2026-09-02 — R12 headroom audit CORRECTED against measured peaks (M19)
+- Measured 2026-08-31 peaks vs 79.19 GiB (81087 MiB) card: qwen3-32b 76681 MiB (94.5%),
+  qwen3-8b 77039 (95.0%), qwen3-30b-a3b 75435 (93.0%). R12 requires >=10-15% free; NONE meet it.
+  "Passed staging" meant "did not crash", not "has headroom". This is the systemic thread behind
+  the multi-day stall: every pilot model is at the machine limit because ~30B-class models were
+  kept on one card (util 0.90 leaves only 7.9 GiB = 9.7% — the budget ITSELF violates R12).
+- gemma4 fp8-KV is NOT a confound (M19a): pair-2 is 30B-A3B(bf16)->8B(fp16); fp8 appears only as
+  pair-1 target's serving quant. gemma4 held-out with fp8 KV = documented serving choice
+  (official vLLM gemma4 recipe). fp8 KV halves the 13.76 GiB need to ~6.9 GiB -> fits at util
+  0.90 with real margin. gemma4 CAN stay, feasibly, at uniform 16384.
