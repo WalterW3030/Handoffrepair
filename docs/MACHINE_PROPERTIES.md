@@ -330,3 +330,12 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - Fix: tools/t2_shim_gate.sh written (real gate, runs smoke/shim_probe_20.json against a live
   served endpoint via UniformToolShim, 20/20 required). Must pass 20/20 on ALL FOUR models
   before the main-run approval gate. Staging is NOT complete until T2 artifacts exist.
+
+## 2026-09-02 — gemma4 engine-core death + tmux killed; NO log recoverable (--rm erased it) (M22)
+- serve_*.sh all used `docker run --rm`: crashed container auto-deleted, logs destroyed at
+  death. docker ps -a empty; dmesg OOM grep empty. No post-mortem possible — the evidence
+  channel did not survive the failure (M2 recurrence in the serve scripts; staging_collect
+  learned this 2026-08-28, serve scripts never updated).
+- tmux session killed alongside = anomaly (vLLM crash does not kill host tmux) — points to
+  machine-level reclaim, but unverifiable without the log the --rm erased.
+- Fix applied: --rm dropped from all 4 serve_*.sh so dead containers persist for docker logs.

@@ -31,7 +31,7 @@ if [ "$REV" != "TO_PIN" ]; then
 else
   echo "WARN: QWEN3_30B_A3B_REV not pinned — staging only; pin before main run." >&2
 fi
-exec docker run --rm --name serve_qwen3_30b_a3b --gpus '"'"device=$GPU_ID"'"' \
+exec docker run --name serve_qwen3_30b_a3b --gpus '"'"device=$GPU_ID"'"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   --ipc=host \

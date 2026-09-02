@@ -12,7 +12,7 @@ GPU_ID="${GPU_ID:-$(nvidia-smi --query-gpu=index,memory.used --format=csv,nohead
 IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 HF_HOME="${HF_HOME:-${PILOT_DATA:-/ephemeral/hr/pilot}/hf}"
 PORT="${PORT:-8000}"
-exec docker run --rm --name serve_qwen3_8b --gpus '"'"device=$GPU_ID"'"' \
+exec docker run --name serve_qwen3_8b --gpus '"'"device=$GPU_ID"'"' \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -p "$PORT:8000" ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   --ipc=host \
