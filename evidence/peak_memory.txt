@@ -1,3 +1,4 @@
 qwen3-32b peak_mib=76681
 qwen3-8b peak_mib=77039
 qwen3-30b-a3b peak_mib=75435
+gemma4-31b peak_mib=77587
