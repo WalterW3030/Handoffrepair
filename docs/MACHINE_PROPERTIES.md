@@ -320,3 +320,13 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   experiment variable (pair-2 is bf16/fp16; fp8 appears only as pair-1 target serving quant).
 - ALL FOUR MODELS NOW FEASIBLE at uniform ctx 16384. This is the first fully-runnable config.
   R0: parameters frozen — ctx 16384, util 0.90 (gemma4 fp8) / 0.92 (Qwen), uniform shim.
+
+## 2026-09-02 — staging 4/4 SERVE + smoke OK (incl. gemma4 fp8 KV); T1/T2 never ran (M21)
+- New staging evidence (2026-09-02 18:36): all four models serve + smoke. gemma4 fp8 KV:
+  1.37x concurrency, peak 77587 MiB. Qwen peaks 76681/77039/75435 MiB.
+- GAP (M21): T1/T2 validation was documented (NEW_PARAMETER_VALIDATION.md) but never wired
+  into staging_collect.sh — the script only does launch+smoke+peak. The uniform shim
+  extraction layer (all 4 models, incl. gemma4 under fp8 numerics) is UNVERIFIED end-to-end.
+- Fix: tools/t2_shim_gate.sh written (real gate, runs smoke/shim_probe_20.json against a live
+  served endpoint via UniformToolShim, 20/20 required). Must pass 20/20 on ALL FOUR models
+  before the main-run approval gate. Staging is NOT complete until T2 artifacts exist.
