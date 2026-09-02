@@ -275,3 +275,9 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - Next: re-check container state on machine (docker ps -a; if still running, wait for the
   pip install + model load, then capture). If container is gone/exited, the docker run itself
   failed and its stderr was lost (run without -d to see it, or check `docker ps -a` exit code).
+
+## 2026-09-01 — decisive probe command was unpasteable + stderr-suppressed (M18)
+- The probe I issued embedded a multi-line single-quoted -c string with in-quote backslash
+  continuations AND `docker run ... > /dev/null`. Paste truncated the command; /dev/null hid
+  the docker error. Container never created; user saw instant silent end. Fix: heredoc-script
+  form + no /dev/null on the decisive command + explicit success/failure marker.
