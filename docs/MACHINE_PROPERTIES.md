@@ -353,3 +353,14 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   launch, but if a tenant grabs the device BETWEEN selection and CUDA init (or the device is
   in a busy/exclusive state), the container sees "device unavailable". Need: re-check GPU
   state at launch + retry-once on cudaErrorDevicesUnavailable, not a blind relaunch.
+
+## 2026-09-04 — gemma4 launch landed on cuda:0 despite intent; 21.98 GiB free < 71.27 desired
+- Evidence: gemma4_death_20260904T232302Z.log — ValueError "Free memory on device cuda:0
+  (21.98/79.19 GiB) ... less than desired (0.9, 71.27 GiB)". nvidia-smi at the time: GPU0 37G
+  used, GPUs 4/5/6/7 free. User set GPU_ID=6 but the container init'd cuda:0 — the pin did NOT
+  take effect (assignment lost / placeholder error earlier), and the script auto-pick was not
+  the cause (auto-pick would have chosen GPU 4, freest). Root: GPU_ID env never reached the
+  script; no pre-flight verified the chosen GPU before launch.
+- Fix: serve_gemma4_31b.sh now echoes the resolved GPU_ID and hard-refuses to launch if the
+  chosen GPU has <73 GiB free (same pre-flight as staging_collect/quick_probe). Applied to
+  gemma4 first (the failing one); same guard should propagate to the other serve scripts.

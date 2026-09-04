@@ -22,6 +22,13 @@ cd "$(dirname "$0")/.."
 # R3: exactly one GPU — pick the freest unless GPU_ID is pinned (shared 8-GPU machine;
 # 2026-08-28: cuda:0 was 33 GiB occupied by another process → vLLM refused to start).
 GPU_ID="${GPU_ID:-$(nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | awk -F, '{gsub(/ /,"",$1); print $1}')}"
+echo "serve_gemma4_31b: launching on GPU_ID=$GPU_ID"
+# Hard pre-flight (R3/R9): refuse to launch if the chosen GPU can't satisfy util 0.90.
+# 2026-09-04: a launch landed on cuda:0 (21.98 GiB free) despite intent to use another GPU —
+# the pin must be verified, not assumed.
+FREE_MIB=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i "$GPU_ID" | head -1)
+echo "  GPU $GPU_ID free: ${FREE_MIB} MiB"
+[ "$FREE_MIB" -ge 73000 ] || { echo "STOP: GPU $GPU_ID has only ${FREE_MIB} MiB free (<73 GiB needed at util 0.90). Pick a free GPU: nvidia-smi --query-gpu=index,memory.used --format=csv"; exit 1; }
 IMAGE="vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967"
 HF_HOME="${HF_HOME:-${PILOT_DATA:-/ephemeral/hr/pilot}/hf}"
 PORT="${PORT:-8000}"
