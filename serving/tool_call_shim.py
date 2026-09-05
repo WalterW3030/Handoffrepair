@@ -27,15 +27,37 @@ argument quality; T2's 20-case battery per model measures exactly that gap.
 """
 import json
 
+# 2026-09-05 (M23 follow-up, T2 root-cause fix): the schema must REQUIRE the fields
+# the shim/gate actually validate. Previously only "type" was required, so guided-JSON
+# could legally emit {"type":"tool_call"} with no tool/args (or a message with no
+# content) — which the shim then rejected, producing [shim_failure] after retries.
+# That, not fp8 numerics, is the likely cause of the gemma4 13/20 (failures clustered
+# on multi-arg tools: calendar, send_message, query_database, + one message case).
+# Enforce the contract at the grammar level. Implemented as anyOf (not if/then):
+# xgrammar-class guided-JSON backends reliably support anyOf+enum; if/then/else
+# support is patchy and an unsupported keyword would fail EVERY request, not just
+# the bad ones. anyOf also lets the model commit to one branch up front.
 TOOL_CALL_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "type": {"enum": ["tool_call", "message"]},
-        "tool": {"type": "string"},
-        "args": {"type": "object"},
-        "content": {"type": "string"},
-    },
-    "required": ["type"],
+    "anyOf": [
+        {
+            "type": "object",
+            "properties": {
+                "type": {"enum": ["tool_call"]},
+                "tool": {"type": "string"},
+                "args": {"type": "object"},
+                "content": {"type": "string"},
+            },
+            "required": ["type", "tool", "args"],
+        },
+        {
+            "type": "object",
+            "properties": {
+                "type": {"enum": ["message"]},
+                "content": {"type": "string"},
+            },
+            "required": ["type", "content"],
+        },
+    ]
 }
 MAX_RETRIES = 2
 
@@ -82,8 +104,12 @@ class UniformToolShim:
                 action = json.loads(last_raw)
                 if action.get("type") not in ("tool_call", "message"):
                     raise ValueError("bad action type")
-                if action["type"] == "tool_call" and "tool" not in action:
-                    raise ValueError("tool_call without tool name")
+                # keep offline validation exactly as strict as TOOL_CALL_SCHEMA —
+                # grammar and validator must never disagree (T2 13/20 root cause)
+                if action["type"] == "tool_call" and ("tool" not in action or "args" not in action):
+                    raise ValueError("tool_call missing tool/args")
+                if action["type"] == "message" and "content" not in action:
+                    raise ValueError("message missing content")
                 u = resp.usage
                 usage = (u.model_dump() if hasattr(u, "model_dump")
                          else {k: getattr(u, k, 0) for k in ("prompt_tokens", "completion_tokens")})

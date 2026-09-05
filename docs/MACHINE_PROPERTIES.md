@@ -364,3 +364,28 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - Fix: serve_gemma4_31b.sh now echoes the resolved GPU_ID and hard-refuses to launch if the
   chosen GPU has <73 GiB free (same pre-flight as staging_collect/quick_probe). Applied to
   gemma4 first (the failing one); same guard should propagate to the other serve scripts.
+
+## 2026-09-05 — T2 gemma4 13/20 root cause: guided-JSON schema under-required tool/args (design bug, not model/fp8)
+- Evidence: evidence/t2_shim_gemma4-31b_20260905T021959Z.json — 7 failures, ALL shim_failure
+  (sentinel, not wrong-tool): ids 5,6 (create_calendar_event), 7,8 (send_message),
+  10,18 (query_database), 16 (message case). Id 9 (query_database) PASSED → stochastic
+  per-prompt, not tool-specific. Old artifact predates M23 last_raw capture, so raw model
+  output was not available; diagnosis from code path.
+- Root cause (code-level): TOOL_CALL_SCHEMA had "required": ["type"] only. vLLM guided-JSON
+  guarantees output matching the GRAMMAR, not the shim's stricter offline validation —
+  so the grammar could legally emit {"type":"tool_call"} with no tool/args (or a message
+  with no content), the shim rejected it, MAX_RETRIES re-prompts hit the same permissive
+  grammar, and the case ended [shim_failure]. Grammar and validator disagreed = guaranteed
+  waste. Multi-arg tools failed most because minimal objects are cheapest to emit there.
+- Fix (serving/tool_call_shim.py): schema rewritten as anyOf of two fully-specified branches
+  — tool_call requires type+tool+args; message requires type+content — enforced at the
+  grammar level. Shim offline validation made exactly as strict (tool+args / content checks).
+  Implementation note: used anyOf+enum, NOT if/then — xgrammar-class backends document
+  anyOf/enum/required as supported (vLLM auto falls back xgrammar→guidance on rejection);
+  if/then/else support is patchy and would have risked 400s on EVERY request.
+- Verification: jsonschema semantics test 6/6 OK offline (bare tool_call rejected, full
+  tool_call accepted, message w/o content rejected, bad type rejected). Backend compile not
+  locally testable (no xgrammar in analysis env); final verification = live gate re-run.
+- Re-run required: restart gemma4 server, bash tools/t2_shim_gate.sh gemma4-31b 8000.
+  Expect the 7 prior failures to pass under enforced schema; if any still fail, the new
+  artifact's per-case raw field (M23) shows gemma4's actual output for next diagnosis.
