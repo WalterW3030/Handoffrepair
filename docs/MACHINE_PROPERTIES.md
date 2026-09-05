@@ -418,3 +418,16 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   bypassing proxies for the local endpoint regardless of env. (2) Health-check guidance
   updated: use curl -s --noproxy '*' http://localhost:8000/health (or
   no_proxy=localhost,127.0.0.1 prefix). No serve-script change needed.
+
+## 2026-09-05 (d) — T2 gemma4 19/20: extraction layer fully fixed; last failure is genuine model error
+- Evidence: evidence/t2_shim_gemma4-31b_20260905T071708Z.json — 19/20, progression
+  13 (bare-JSON) → 15 (fences) → 19. Remaining failure id 8 is NOT a shim_failure:
+  model returned a valid, well-formed tool_call but picked query_database instead of
+  send_message for "Send the report summary to Prof. Chen" (wrong-tool capability error).
+- The extraction layer is now clean end-to-end: guided-JSON anyOf schema enforces
+  tool/args at grammar level + fence unwrap handles gemma4's ```json habit. No
+  [shim_failure] remains. Fix chain validated.
+- Id 8 is borderline (mention of "report" pulls toward query_database at temp 0).
+  Gate policy question: is the T2 acceptance bar 20/20 exactly, or 0 shim_failures
+  (extraction contract) + logged capability errors? Flagged for user decision —
+  do NOT relax the gate unilaterally.
