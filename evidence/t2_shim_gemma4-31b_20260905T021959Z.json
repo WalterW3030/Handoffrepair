@@ -1,0 +1,189 @@
+{
+  "model": "gemma4-31b",
+  "ts": "evidence/t2_shim_gemma4-31b_20260905T021959Z.json",
+  "pass": 13,
+  "total": 20,
+  "verdict": "T2 gemma4-31b: 13/20 FAIL",
+  "cases": [
+    {
+      "id": 1,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather"
+    },
+    {
+      "id": 2,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather"
+    },
+    {
+      "id": 3,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "search_flights",
+      "want_tool": "search_flights"
+    },
+    {
+      "id": 4,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "search_flights",
+      "want_tool": "search_flights"
+    },
+    {
+      "id": 5,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "create_calendar_event"
+    },
+    {
+      "id": 6,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "create_calendar_event"
+    },
+    {
+      "id": 7,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "send_message"
+    },
+    {
+      "id": 8,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "send_message"
+    },
+    {
+      "id": 9,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "query_database",
+      "want_tool": "query_database"
+    },
+    {
+      "id": 10,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "query_database"
+    },
+    {
+      "id": 11,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather"
+    },
+    {
+      "id": 12,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "search_flights",
+      "want_tool": "search_flights"
+    },
+    {
+      "id": 13,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null
+    },
+    {
+      "id": 14,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null
+    },
+    {
+      "id": 15,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null
+    },
+    {
+      "id": 16,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null
+    },
+    {
+      "id": 17,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather"
+    },
+    {
+      "id": 18,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "query_database"
+    },
+    {
+      "id": 19,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null
+    },
+    {
+      "id": 20,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather"
+    }
+  ]
+}
