@@ -26,6 +26,21 @@ Known limitation (recorded at design time): guided_json constrains syntax, not
 argument quality; T2's 20-case battery per model measures exactly that gap.
 """
 import json
+import re
+
+# gemma4's chat template wraps responses in ```json fences; strip before parsing.
+# Without this, json.loads(raw) throws on the backticks, every deterministic
+# re-prompt returns the same fenced output, and the case ends [shim_failure]
+# even though the model produced a complete, correct tool_call (T2 15/20 root
+# cause: ids 5,6,8,18,20 all had well-formed JSON inside fences — evidence
+# t2_shim_gemma4-31b_20260905T041403Z.json).
+_FENCE_RE = re.compile(r"^\s*```(?:json)?\s*\n(.*?)\n?\s*```\s*$", re.DOTALL)
+
+
+def _unwrap(text):
+    """Strip a markdown code fence if the whole response is wrapped in one."""
+    m = _FENCE_RE.match(text or "")
+    return m.group(1) if m else text
 
 # 2026-09-05 (M23 follow-up, T2 root-cause fix): the schema must REQUIRE the fields
 # the shim/gate actually validate. Previously only "type" was required, so guided-JSON
@@ -101,7 +116,7 @@ class UniformToolShim:
             )
             try:
                 last_raw = resp.choices[0].message.content or ""
-                action = json.loads(last_raw)
+                action = json.loads(_unwrap(last_raw))
                 if action.get("type") not in ("tool_call", "message"):
                     raise ValueError("bad action type")
                 # keep offline validation exactly as strict as TOOL_CALL_SCHEMA —

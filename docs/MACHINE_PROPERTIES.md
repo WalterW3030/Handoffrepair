@@ -389,3 +389,32 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - Re-run required: restart gemma4 server, bash tools/t2_shim_gate.sh gemma4-31b 8000.
   Expect the 7 prior failures to pass under enforced schema; if any still fail, the new
   artifact's per-case raw field (M23) shows gemma4's actual output for next diagnosis.
+
+## 2026-09-05 (b) — T2 15/20 TRUE root cause: gemma4 wraps output in ```json fences; shim parsed raw
+- Evidence: evidence/t2_shim_gemma4-31b_20260905T041403Z.json — first run WITH M23 raw capture.
+  5 failures (ids 5,6,8,18,20), ALL shim_failure, and every raw field shows COMPLETE,
+  WELL-FORMED, CORRECT tool_call JSON wrapped in ```json ... ``` fences.
+- The earlier anyOf schema fix (f455cd5) was VALID and improved things (13→15; the old
+  "bare tool_call, no args" failure mode is gone — model now emits full args), but the
+  REAL blocker was downstream: shim did json.loads(raw) on the fenced string →
+  JSONDecodeError at char 0 → deterministic retries returned the same fenced output →
+  [shim_failure]. The model was right; the parser was blind to gemma4's chat-template
+  fence habit. If raw capture (M23) had existed from the start this would have been
+  diagnosed in one run instead of two.
+- Fix (serving/tool_call_shim.py): _unwrap() strips a whole-response ```json/``` fence
+  before json.loads. Verified: exact failing raw strings now parse; unfenced (Qwen) output
+  unchanged; prose-wrapped output still correctly rejected (grammar forbids it anyway).
+- Lesson folded into M24/M25: constrain→validate→PARSE — every layer in the chain must be
+  checked against real captured output, not assumed compatible.
+
+## 2026-09-05 (c) — localhost health-check confusion: proxy env routes local requests away
+- Symptom (user report): curl -s http://localhost:8000/health worked in the serving window
+  but not another window; same class of confusion made the gate appear unreachable.
+- Cause: shells that export http_proxy/HTTPS_PROXY (needed for HF downloads on this machine)
+  cause curl AND urllib to route even localhost through the proxy unless no_proxy covers it.
+  The serve script publishes on all interfaces (-p PORT:8000), so the server was never the
+  problem — the client was sending the request to the proxy instead of the local container.
+- Fixes: (1) t2_shim_gate.sh LiveClient now builds an opener with an empty ProxyHandler,
+  bypassing proxies for the local endpoint regardless of env. (2) Health-check guidance
+  updated: use curl -s --noproxy '*' http://localhost:8000/health (or
+  no_proxy=localhost,127.0.0.1 prefix). No serve-script change needed.

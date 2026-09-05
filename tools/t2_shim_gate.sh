@@ -29,7 +29,12 @@ tools = battery["tools_common"]
 
 class LiveClient:
     """Minimal OpenAI-compatible chat.completions client over urllib (no openai pkg needed)."""
-    def __init__(self, port): self.url = f"http://localhost:{port}/v1/chat/completions"
+    def __init__(self, port):
+        self.url = f"http://localhost:{port}/v1/chat/completions"
+        # 2026-09-05: the serving window may export http_proxy/HTTPS_PROXY (needed for HF
+        # downloads). urllib honors them, so a proxy env would route this LOCAL request
+        # through the proxy and break the gate. Bypass proxies explicitly.
+        self._opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     class _NS:  # tiny namespace mimicking openai response objects
         def __init__(self, d): self.__dict__.update(d)
     class chat:
@@ -44,7 +49,7 @@ class LiveClient:
         if extra_body: payload.update(extra_body)
         req = urllib.request.Request(self.url, data=json.dumps(payload).encode(),
                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with self._opener.open(req, timeout=120) as r:
             d = json.loads(r.read().decode())
         msg = d["choices"][0]["message"]
         usage = d.get("usage", {})
