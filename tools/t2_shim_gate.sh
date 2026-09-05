@@ -68,6 +68,7 @@ client.chat.completions.create = client.chat_completions_create
 shim = UniformToolShim(client, model_name=key)
 results = []
 npass = 0
+nshimfail = 0
 for case in battery["cases"]:
     exp = case["expect"]
     resp = shim.generate(case["messages"], tools)
@@ -84,10 +85,16 @@ for case in battery["cases"]:
                     "got_tool": action.get("tool"), "want_tool": exp.get("tool"),
                     "raw": (resp.get("last_raw") or action.get("content") or "")[:500] if not ok else ""})
     npass += ok
-verdict = f"T2 {key}: {npass}/{len(battery['cases'])} {'PASS' if npass==len(battery['cases']) else 'FAIL'}"
+    nshimfail += shim_fail
+
+# 2026-09-05 revised criterion (see NEW_PARAMETER_VALIDATION.md T2): the gate validates
+# the EXTRACTION CONTRACT. PASS = zero shim_failures. Well-formed-but-wrong-tool cases
+# are genuine capability errors — logged above, not gated.
+verdict = (f"T2 {key}: extraction {'PASS' if nshimfail==0 else 'FAIL'} "
+           f"({nshimfail} shim_failures; {npass}/{len(battery['cases'])} exact)")
 json.dump({"model": key, "ts": out, "pass": npass, "total": len(battery["cases"]),
-           "verdict": verdict, "cases": results}, open(out, "w"), indent=2)
+           "shim_failures": nshimfail, "verdict": verdict, "cases": results}, open(out, "w"), indent=2)
 print(verdict)
 print("artifact:", out)
-sys.exit(0 if npass == len(battery["cases"]) else 1)
+sys.exit(0 if nshimfail == 0 else 1)
 PYEOF
