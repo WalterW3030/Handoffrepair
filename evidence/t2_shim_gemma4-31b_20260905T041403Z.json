@@ -1,0 +1,209 @@
+{
+  "model": "gemma4-31b",
+  "ts": "evidence/t2_shim_gemma4-31b_20260905T041403Z.json",
+  "pass": 15,
+  "total": 20,
+  "verdict": "T2 gemma4-31b: 15/20 FAIL",
+  "cases": [
+    {
+      "id": 1,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather",
+      "raw": ""
+    },
+    {
+      "id": 2,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather",
+      "raw": ""
+    },
+    {
+      "id": 3,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "search_flights",
+      "want_tool": "search_flights",
+      "raw": ""
+    },
+    {
+      "id": 4,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "search_flights",
+      "want_tool": "search_flights",
+      "raw": ""
+    },
+    {
+      "id": 5,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "create_calendar_event",
+      "raw": "```json\n{\"type\": \"tool_call\", \"tool\": \"create_calendar_event\", \"args\": {\"title\": \"dentist appointment\", \"start\": \"2026-09-02T14:00\", \"duration_min\": 45}}\n```"
+    },
+    {
+      "id": 6,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "create_calendar_event",
+      "raw": "```json\n{\"type\": \"tool_call\", \"tool\": \"create_calendar_event\", \"args\": {\"title\": \"Team Sync\", \"start\": \"2026-08-30T09:30\", \"duration_min\": 30}}\n```"
+    },
+    {
+      "id": 7,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "send_message",
+      "want_tool": "send_message",
+      "raw": ""
+    },
+    {
+      "id": 8,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "send_message",
+      "raw": "```json\n{\"type\": \"tool_call\", \"tool\": \"query_database\", \"args\": {\"table\": \"reports\", \"filters\": {\"title\": \"summary\"}}}\n```"
+    },
+    {
+      "id": 9,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "query_database",
+      "want_tool": "query_database",
+      "raw": ""
+    },
+    {
+      "id": 10,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "query_database",
+      "want_tool": "query_database",
+      "raw": ""
+    },
+    {
+      "id": 11,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather",
+      "raw": ""
+    },
+    {
+      "id": 12,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "search_flights",
+      "want_tool": "search_flights",
+      "raw": ""
+    },
+    {
+      "id": 13,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": ""
+    },
+    {
+      "id": 14,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": ""
+    },
+    {
+      "id": 15,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": ""
+    },
+    {
+      "id": 16,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": ""
+    },
+    {
+      "id": 17,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "tool_call",
+      "want_type": "tool_call",
+      "got_tool": "get_weather",
+      "want_tool": "get_weather",
+      "raw": ""
+    },
+    {
+      "id": 18,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "query_database",
+      "raw": "```json\n{\"type\": \"tool_call\", \"tool\": \"query_database\", \"args\": {\"table\": \"events\", \"filters\": {\"date\": \"2026-09-01\", \"type\": \"meeting\"}}}\n```"
+    },
+    {
+      "id": 19,
+      "pass": true,
+      "shim_failure": false,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": ""
+    },
+    {
+      "id": 20,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "get_weather",
+      "raw": "```json\n{\"type\": \"tool_call\", \"tool\": \"get_weather\", \"args\": {\"city\": \"Oslo\"}}\n```"
+    }
+  ]
+}
