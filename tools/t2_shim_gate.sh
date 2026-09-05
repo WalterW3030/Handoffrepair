@@ -76,7 +76,8 @@ for case in battery["cases"]:
         ok = ok and all(k in (action.get("args") or {}) for k in req)
     results.append({"id": case["id"], "pass": ok, "shim_failure": shim_fail,
                     "got_type": action.get("type"), "want_type": exp["action_type"],
-                    "got_tool": action.get("tool"), "want_tool": exp.get("tool")})
+                    "got_tool": action.get("tool"), "want_tool": exp.get("tool"),
+                    "raw": (resp.get("last_raw") or action.get("content") or "")[:500] if not ok else ""})
     npass += ok
 verdict = f"T2 {key}: {npass}/{len(battery['cases'])} {'PASS' if npass==len(battery['cases']) else 'FAIL'}"
 json.dump({"model": key, "ts": out, "pass": npass, "total": len(battery["cases"]),

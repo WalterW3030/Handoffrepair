@@ -69,6 +69,7 @@ class UniformToolShim:
             tools=json.dumps(tools or []),
             transcript=transcript,
         )
+        last_raw = ""
         for attempt in range(MAX_RETRIES + 1):
             resp = self.client.chat.completions.create(
                 model=self.name,
@@ -77,7 +78,8 @@ class UniformToolShim:
                 temperature=0.0,
             )
             try:
-                action = json.loads(resp.choices[0].message.content)
+                last_raw = resp.choices[0].message.content or ""
+                action = json.loads(last_raw)
                 if action.get("type") not in ("tool_call", "message"):
                     raise ValueError("bad action type")
                 if action["type"] == "tool_call" and "tool" not in action:
@@ -88,10 +90,12 @@ class UniformToolShim:
                 return {"model": self.name, "action": action, "usage": usage}
             except (json.JSONDecodeError, AttributeError, ValueError):
                 continue                       # deterministic re-prompt
-        # exhausted: log as shim failure, emit empty terminal turn
+        # exhausted: log as shim failure, emit empty terminal turn.
+        # Attach last_raw so the T2 gate / logs can diagnose WHY it failed (M23).
         return {"model": self.name,
                 "action": {"type": "message", "content": "[shim_failure]"},
-                "usage": {"prompt_tokens": 0, "completion_tokens": 0}}
+                "usage": {"prompt_tokens": 0, "completion_tokens": 0},
+                "last_raw": last_raw[:500]}
 
 
 class GemmaToolShim(UniformToolShim):
