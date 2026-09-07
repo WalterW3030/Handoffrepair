@@ -60,41 +60,70 @@ class LiveClient:
         return resp
 
 client = LiveClient(port)
+
+# 2026-09-05 (qwen3-32b 404): never ASSUME the served model name equals the gate key —
+# query /v1/models for what the server actually serves. A 404 on chat/completions means
+# the name didn't match (e.g. launched without --served-model-name → HF path is the name).
+models_req = urllib.request.Request(f"http://localhost:{port}/v1/models")
+with client._opener.open(models_req, timeout=30) as r:
+    served = [m["id"] for m in json.loads(r.read().decode())["data"]]
+if key in served:
+    served_name = key
+elif len(served) == 1:
+    served_name = served[0]
+    print(f"note: gate key '{key}' not the served name; using the server's only model '{served_name}'")
+else:
+    print(f"STOP: gate key '{key}' not among served models {served}")
+    sys.exit(2)
+
 # attach the create method UniformToolShim expects
 client.chat = type("X", (), {})()
 client.chat.completions = type("Y", (), {})()
 client.chat.completions.create = client.chat_completions_create
 
-shim = UniformToolShim(client, model_name=key)
+shim = UniformToolShim(client, model_name=served_name)
 results = []
 npass = 0
 nshimfail = 0
+ncrash = 0
+def write_artifact():
+    verdict = (f"T2 {key}: extraction {'PASS' if nshimfail==0 and ncrash==0 else 'FAIL'} "
+               f"({nshimfail} shim_failures, {ncrash} transport_errors; {npass}/{len(battery['cases'])} exact)")
+    json.dump({"model": key, "served_name": served_name, "ts": out, "pass": npass,
+               "total": len(battery["cases"]), "shim_failures": nshimfail,
+               "transport_errors": ncrash, "verdict": verdict, "cases": results},
+              open(out, "w"), indent=2)
+    return verdict
+
 for case in battery["cases"]:
     exp = case["expect"]
-    resp = shim.generate(case["messages"], tools)
-    action = resp["action"]
-    shim_fail = action.get("content") == "[shim_failure]"
-    ok_type = action.get("type") == exp["action_type"]
-    ok = ok_type and not shim_fail
-    if exp["action_type"] == "tool_call" and not shim_fail:
-        ok = ok and action.get("tool") == exp.get("tool")
-        req = exp.get("required_args", [])
-        ok = ok and all(k in (action.get("args") or {}) for k in req)
-    results.append({"id": case["id"], "pass": ok, "shim_failure": shim_fail,
-                    "got_type": action.get("type"), "want_type": exp["action_type"],
-                    "got_tool": action.get("tool"), "want_tool": exp.get("tool"),
-                    "raw": (resp.get("last_raw") or action.get("content") or "")[:500] if not ok else ""})
-    npass += ok
-    nshimfail += shim_fail
+    try:
+        resp = shim.generate(case["messages"], tools)
+        action = resp["action"]
+        shim_fail = action.get("content") == "[shim_failure]"
+        ok_type = action.get("type") == exp["action_type"]
+        ok = ok_type and not shim_fail
+        if exp["action_type"] == "tool_call" and not shim_fail:
+            ok = ok and action.get("tool") == exp.get("tool")
+            req = exp.get("required_args", [])
+            ok = ok and all(k in (action.get("args") or {}) for k in req)
+        results.append({"id": case["id"], "pass": ok, "shim_failure": shim_fail,
+                        "got_type": action.get("type"), "want_type": exp["action_type"],
+                        "got_tool": action.get("tool"), "want_tool": exp.get("tool"),
+                        "raw": (resp.get("last_raw") or action.get("content") or "")[:500] if not ok else ""})
+        npass += ok
+        nshimfail += shim_fail
+    except Exception as e:
+        # transport/HTTP error (404 model-not-found, connection reset, ...) — record the
+        # case as a crash with the error text and CONTINUE; never lose the whole run (M23).
+        ncrash += 1
+        results.append({"id": case["id"], "pass": False, "shim_failure": False,
+                        "transport_error": f"{type(e).__name__}: {e}"[:500],
+                        "want_type": exp["action_type"], "want_tool": exp.get("tool")})
+    write_artifact()   # incremental: a later crash still leaves all completed cases
 
-# 2026-09-05 revised criterion (see NEW_PARAMETER_VALIDATION.md T2): the gate validates
-# the EXTRACTION CONTRACT. PASS = zero shim_failures. Well-formed-but-wrong-tool cases
-# are genuine capability errors — logged above, not gated.
-verdict = (f"T2 {key}: extraction {'PASS' if nshimfail==0 else 'FAIL'} "
-           f"({nshimfail} shim_failures; {npass}/{len(battery['cases'])} exact)")
-json.dump({"model": key, "ts": out, "pass": npass, "total": len(battery["cases"]),
-           "shim_failures": nshimfail, "verdict": verdict, "cases": results}, open(out, "w"), indent=2)
+verdict = write_artifact()
 print(verdict)
 print("artifact:", out)
-sys.exit(0 if nshimfail == 0 else 1)
+sys.exit(0 if (nshimfail == 0 and ncrash == 0) else 1)
 PYEOF

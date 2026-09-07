@@ -431,3 +431,21 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   Gate policy question: is the T2 acceptance bar 20/20 exactly, or 0 shim_failures
   (extraction contract) + logged capability errors? Flagged for user decision —
   do NOT relax the gate unilaterally.
+
+## 2026-09-05 (e) — T2 gate crashed on qwen3-32b with HTTP 404; artifact lost; push script picked stale staging dir
+- Symptom: gate traceback at shim.generate → urllib HTTPError 404 on /v1/chat/completions;
+  push_latest_evidence.sh then reported "latest staging dir: 20260902T102215Z" (stale) and
+  found nothing new — the gate had crashed BEFORE writing its artifact (it only wrote at
+  the end), so the failure left no evidence file at all.
+- 404 on chat/completions means the serving endpoint did not recognize the model name —
+  the gate sent model=<gate key> blindly; if the server was launched without the matching
+  --served-model-name (or a different launcher), vLLM 404s. (Note: serve_qwen3_32b.sh
+  DOES set --served-model-name qwen3-32b, matching — so the server the gate hit was
+  likely NOT that script's container, or a stale container on port 8000.)
+- Fixes (t2_shim_gate.sh): (1) query /v1/models first and use the ACTUAL served name
+  (exact match on key if present; single-model server → use it with a printed note;
+  mismatch on multi-model → STOP with the list). (2) per-case try/except: transport/HTTP
+  errors are recorded per-case (transport_error field) and the loop CONTINUES.
+  (3) artifact written incrementally after EVERY case — a crash can no longer erase a run.
+- Also noted: serve_qwen3_32b.sh lacks the GPU_ID echo + 73 GiB pre-flight that gemma4's
+  launcher has (guard was applied to gemma4 only, 2026-09-04). Propagation pending.
