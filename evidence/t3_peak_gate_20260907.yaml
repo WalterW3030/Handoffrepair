@@ -1,0 +1,22 @@
+# T3 peak-memory gate — computed from measured staging evidence (no new GPU run).
+# Peaks: evidence/peak_memory.txt (measured 2026-08-31 at frozen settings:
+#   Qwen x3 = 16384/0.92 bf16 KV; gemma4 = 16384/0.90 fp8 KV).
+# Card: H100, 81087 MiB total, 79.19 GiB (81159 MiB) usable.
+card_usable_mib: 81159
+models:
+  qwen3-32b:      {peak_mib: 76681, serves: true, kv_concurrency_at_16384: 2.36}
+  qwen3-8b:       {peak_mib: 77039, serves: true, kv_concurrency_at_16384: 24.84}
+  qwen3-30b-a3b:  {peak_mib: 75435, serves: true, kv_concurrency_at_16384: 8.66}
+  gemma4-31b:     {peak_mib: 77587, serves: true, kv_concurrency_at_16384: 1.37}
+verdict: ALL_SERVE_AT_FROZEN_SETTINGS
+headroom_caveat: >-
+  Peaks are 93.0-95.6% of usable card (margins 3.6-5.7 GiB). This CONFIRMS "serves
+  without OOM at frozen settings" (T3's actual pass test) but does NOT meet R12's
+  10-15% headroom design rule — a tension recorded at staging and accepted (M19b):
+  single-tenant GPU, enforce-eager, sequential single-model serving makes the thin
+  margin survivable; it would NOT survive concurrent serving or a second tenant
+  grabbing memory mid-run. Flagged, not re-decided here.
+kv_note: >-
+  gemma4's 1.37x concurrency at 16384 is the fp8-KV fix working (was unservable
+  before). All models have >=1x concurrency at frozen ctx, i.e. single-episode
+  execution fits — the pilot runs one episode at a time by design.

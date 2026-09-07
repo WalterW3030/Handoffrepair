@@ -465,3 +465,15 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   decoding.yaml UNCHANGED (frozen). Option A (raise max_new_tokens) rejected: changes a
   frozen parameter and think length is unbounded. Option C (prompt-only) rejected: unreliable.
 - Also aligned gate max_tokens 512→1024 to match the frozen config the gate is validating.
+
+## 2026-09-07 (b) — T2 all 4 models PASS; T3 closed from measured evidence; T1+T4 probe built
+- T2 final: gemma4 19/20, qwen3-32b 20/20, qwen3-8b 19/20, qwen3-30b-a3b 19/20 — ALL with
+  0 shim_failures → extraction contract holds across the whole pilot lineup. The 3
+  non-gated capability errors (gemma4 id8 wrong-tool; qwen3-8b id7 echoed message;
+  qwen3-30b-a3b id7 asked follow-up) are logged as model-difference signal.
+- T3 closed WITHOUT new GPU time: evidence/t3_peak_gate_20260907.yaml — all 4 models serve
+  at frozen settings (peaks 75435-77587 MiB, 93-95.6% card). Caveat recorded: meets "serves
+  without OOM" but not R12's 10-15% headroom (accepted at staging, M19b).
+- T1+T4: built tools/t1_t4_probe.sh — needle at ~15.5k tokens (self-calibrating: sizes the
+  filler from the server's OWN prompt_tokens, not char math — M15 lesson) + timed
+  long-episode throughput. One launch per model gives both metrics. NOT yet run.
