@@ -35,12 +35,18 @@ import re
 # cause: ids 5,6,8,18,20 all had well-formed JSON inside fences — evidence
 # t2_shim_gemma4-31b_20260905T041403Z.json).
 _FENCE_RE = re.compile(r"^\s*```(?:json)?\s*\n(.*?)\n?\s*```\s*$", re.DOTALL)
+# Qwen3 thinking models emit a <think>...</think> reasoning preamble before the answer.
+# Through this shim we want the JSON action only — reasoning is latency, not capability,
+# for an extraction-format task. Strip a leading think block if one appears (defensive;
+# the primary control is enable_thinking=False at the call site).
+_THINK_RE = re.compile(r"^\s*<think>.*?</think>\s*", re.DOTALL)
 
 
 def _unwrap(text):
-    """Strip a markdown code fence if the whole response is wrapped in one."""
-    m = _FENCE_RE.match(text or "")
-    return m.group(1) if m else text
+    """Strip a leading <think> block, then a whole-response markdown code fence."""
+    t = _THINK_RE.sub("", text or "")
+    m = _FENCE_RE.match(t)
+    return m.group(1) if m else t
 
 # 2026-09-05 (M23 follow-up, T2 root-cause fix): the schema must REQUIRE the fields
 # the shim/gate actually validate. Previously only "type" was required, so guided-JSON
@@ -111,7 +117,13 @@ class UniformToolShim:
             resp = self.client.chat.completions.create(
                 model=self.name,
                 messages=[{"role": "user", "content": prompt}],
-                extra_body={"guided_json": TOOL_CALL_SCHEMA},
+                extra_body={"guided_json": TOOL_CALL_SCHEMA,
+                            # Qwen3-32B/8B are thinking models: without this they spend the
+                            # whole token budget on a <think> preamble and the guided JSON
+                            # is never emitted (T2 qwen3-32b 0/20, evidence
+                            # t2_shim_qwen3-32b_20260907T195425Z.json). Non-thinking models
+                            # (Qwen3-30B-A3B-Instruct, gemma4-it) ignore the flag.
+                            "chat_template_kwargs": {"enable_thinking": False}},
                 temperature=0.0,
             )
             try:

@@ -45,7 +45,7 @@ class LiveClient:
                 raise NotImplementedError
     def chat_completions_create(self, model, messages, extra_body=None, temperature=0.0):
         payload = {"model": model, "messages": messages, "temperature": temperature,
-                   "max_tokens": 512}
+                   "max_tokens": 1024}   # match frozen decoding.yaml max_new_tokens (2026-09-07)
         if extra_body: payload.update(extra_body)
         req = urllib.request.Request(self.url, data=json.dumps(payload).encode(),
                                      headers={"Content-Type": "application/json"})

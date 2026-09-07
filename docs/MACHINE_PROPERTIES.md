@@ -449,3 +449,19 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
   (3) artifact written incrementally after EVERY case — a crash can no longer erase a run.
 - Also noted: serve_qwen3_32b.sh lacks the GPU_ID echo + 73 GiB pre-flight that gemma4's
   launcher has (guard was applied to gemma4 only, 2026-09-04). Propagation pending.
+
+## 2026-09-07 — T2 qwen3-32b 0/20: thinking model spent entire token budget on <think> preamble
+- Evidence: evidence/t2_shim_qwen3-32b_20260907T195425Z.json — 20/20 shim_failures, raw
+  shows pure <think> reasoning on every case, no closing </think>, no JSON emitted.
+  Qwen3-32B/8B are thinking models; guided-JSON constrains output from token one, but the
+  FIRST token was <think>, so the schema never engaged before truncation (gate cap 512).
+- CRITICAL consequence: frozen decoding.yaml max_new_tokens=1024 would ALSO truncate think
+  preambles in real episodes — the frozen config could not run thinking models through the
+  shim at all. gemma4 passed because it is instruction-tuned (no think block); Qwen3-30B-
+  A3B-Instruct-2507 is non-thinking, so it was never exposed either.
+- Fix (Option B, R0-screened): disable thinking for shim calls via
+  extra_body chat_template_kwargs.enable_thinking=False (ignored by non-thinking models),
+  plus defensive _unwrap() strip of a leading <think>...</think> block (before fence strip).
+  decoding.yaml UNCHANGED (frozen). Option A (raise max_new_tokens) rejected: changes a
+  frozen parameter and think length is unbounded. Option C (prompt-only) rejected: unreliable.
+- Also aligned gate max_tokens 512→1024 to match the frozen config the gate is validating.
