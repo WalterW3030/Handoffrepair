@@ -1,0 +1,212 @@
+{
+  "model": "qwen3-32b",
+  "served_name": "qwen3-32b",
+  "ts": "evidence/t2_shim_qwen3-32b_20260907T195425Z.json",
+  "pass": 0,
+  "total": 20,
+  "shim_failures": 20,
+  "transport_errors": 0,
+  "verdict": "T2 qwen3-32b: extraction FAIL (20 shim_failures, 0 transport_errors; 0/20 exact)",
+  "cases": [
+    {
+      "id": 1,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "get_weather",
+      "raw": "<think>\nOkay, the user is asking for the current weather in Paris. Let me check the available tools. There's a function called get_weather that takes city and units parameters. The city is required, so I need to call that function with Paris as the city. The units are optional, but since the user didn't specify, maybe I should default to Celsius as it's commonly used in Paris. So I'll structure the tool_call with the city as Paris and units as c. That should fetch the current weather information"
+    },
+    {
+      "id": 2,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "get_weather",
+      "raw": "<think>\nOkay, the user wants to check the weather in Tokyo using Fahrenheit. Let me look at the available tools. There's a get_weather function that takes city and units parameters. The city is Tokyo, and the units should be 'f' for Fahrenheit. I need to make sure the parameters are correctly formatted. The required fields are city, so I include that. Units are optional but the user specified Fahrenheit, so I add units: 'f'. The tool call should be a JSON object with type 'tool_call', the tool n"
+    },
+    {
+      "id": 3,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "search_flights",
+      "raw": "<think>\nOkay, the user is asking for flights from SFO to JFK on September 15, 2026. Let me check the available tools. There's a function called search_flights that requires origin, destination, and date. The parameters are all required, so I need to make sure all three are included. The origin is SFO, destination is JFK, and the date is 2026-09-15. I should structure the tool_call with these parameters. Let me double-check the date format; the user provided it as 2026-09-15, which is YYYY-MM-DD,"
+    },
+    {
+      "id": 4,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "search_flights",
+      "raw": "<think>\nOkay, the user is asking about flights from Berlin to Lisbon on next Friday, which is 2026-09-04. Let me check the available tools. There's a function called search_flights that requires origin, destination, and date. The parameters are all required, so I need to make sure I have each one.\n\nOrigin should be Berlin, destination is Lisbon, and the date is 2026-09-04. The date format looks correct as a string in YYYY-MM-DD. I don't see any other parameters needed for this function. So I sho"
+    },
+    {
+      "id": 5,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "create_calendar_event",
+      "raw": "<think>\nOkay, the user wants to schedule a dentist appointment on their calendar for September 2, 2026, at 2:00 PM, lasting 45 minutes. Let me check the available tools. There's a function called create_calendar_event. The parameters required are title, start, and duration_min. The user provided the title as \"dentist appointment\", the start time as 2026-09-02T14:00, and the duration as 45 minutes. I need to make sure all required parameters are included. Title and start are required, and duratio"
+    },
+    {
+      "id": 6,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "create_calendar_event",
+      "raw": "<think>\nOkay, the user wants to schedule a team sync tomorrow morning at 9:30 AM for half an hour. Let me see which tool to use here. The available functions include create_calendar_event. That seems right because scheduling an event is what that function is for.\n\nLooking at the parameters for create_calendar_event, the required ones are title and start. The user mentioned \"team sync\" as the title, so I can use that. The start time is given as 2026-08-30T09:30, which is in ISO format, so that's "
+    },
+    {
+      "id": 7,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "send_message",
+      "raw": "<think>\nOkay, let's see. The user wants to text Maria that they're running 10 minutes late and to start without them. The available tools include the send_message function. So I need to use that.\n\nThe send_message function requires recipient and body. The recipient here is Maria, and the body is \"running 10 minutes late, start without me\". I should structure the JSON accordingly. Let me check the parameters again to make sure. Yep, both recipient and body are required. So the tool call should be"
+    },
+    {
+      "id": 8,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "send_message",
+      "raw": "<think>\nOkay, let's see. The user wants to send the report summary to Prof. Chen. The available tools include send_message, which requires recipient and body. So I need to use that function. The recipient is Prof. Chen, and the body should mention the report summary. I should structure the JSON with type as tool_call, tool as send_message, and the args with recipient and body. Make sure the content is a string. Let me check the parameters again to confirm. Yep, both recipient and body are requir"
+    },
+    {
+      "id": 9,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "query_database",
+      "raw": "<think>\nOkay, the user is asking how many orders are in the orders table. Let me check the available tools. There's a function called query_database that runs a read-only query. The parameters needed are table and filters. The user wants to know the count of all orders, so the table is \"orders\" and no filters are specified. I need to structure the tool_call with the query_database function, specifying the table as \"orders\" and leaving filters out since they didn't mention any. The content should"
+    },
+    {
+      "id": 10,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "query_database",
+      "raw": "<think>\nOkay, the user wants to look up users whose city is Munich in the users table. Let me check the available tools. There's a function called query_database. Its description says it's for running a read-only query against the app database. The parameters required are \"table\" and optionally \"filters\". \n\nSo, the user is asking about the \"users\" table with a filter on the city being Munich. I need to structure the tool call using query_database. The table parameter should be \"users\", and the f"
+    },
+    {
+      "id": 11,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "get_weather",
+      "raw": "<think>\nOkay, the user asked for the weather in Beijing. The assistant responded by saying they're checking now. So the next step is to actually get the weather data using the get_weather function. Let me check the available tools. The get_weather function requires the city and units. The city is provided as \u5317\u4eac, which is Beijing. The units are optional but usually specified. Since the user didn't mention, maybe default to Celsius. So I should call get_weather with city: \"\u5317\u4eac\" and units: \"c\". Then"
+    },
+    {
+      "id": 12,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "search_flights",
+      "raw": "<think>\nOkay, the user wants to search for flights from Z\u00fcrich to S\u00e3o Paulo on October 1, 2026. Let me check the available tools. There's a function called search_flights that requires origin, destination, and date. The parameters are all required, so I need to make sure all three are included. The origin is Z\u00fcrich, destination is S\u00e3o Paulo, and the date is 2026-10-01. I should format the JSON object with these values. Let me double-check the airport codes. Wait, the user wrote the city names, b"
+    },
+    {
+      "id": 13,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": "<think>\nOkay, the user said, \"Hi! How are you today?\" I need to respond appropriately. Since the user is greeting me, I should reply with a friendly message. Let me check the available tools. The tools include functions like get_weather, search_flights, create_calendar_event, send_message, and query_database. But in this case, the user is just asking how I am, so I don't need to use any of the tools. I should just send a message back. The response needs to be a JSON object matching the schema pr"
+    },
+    {
+      "id": 14,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": "<think>\nOkay, let me try to figure out how to respond here. The user said, \"Thanks, that answered everything. Have a good day.\" So they're ending the conversation.\n\nLooking at the available tools, none of them seem necessary here. The user isn't asking for anything else. They just want to wrap up. The instructions say I must respond with a JSON object matching the schema provided. The schema allows for either a tool call or a message. Since there's no action needed, the right choice is to send a"
+    },
+    {
+      "id": 15,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": "<think>\nOkay, the user is asking, \"What can you do? Just explain, don't do anything yet.\" So I need to list the available functions without invoking any tools. Let me check the tools provided.\n\nFirst, there's get_weather for weather info, search_flights for finding flights, create_calendar_event for scheduling, send_message for contacting, and query_database for database reads. I should describe each function's purpose and parameters briefly. Make sure not to use any tool calls here, just a mess"
+    },
+    {
+      "id": 16,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": "<think>\nOkay, the user initially asked about booking something, but now they want to chat about Lisbon instead. Let me see. The available tools include functions like get_weather, search_flights, create_calendar_event, send_message, and query_database. Since the user is changing the topic to Lisbon, maybe they want information about the weather there. The get_weather function requires a city and optional units. Lisbon is a city, so I can use that function. The user didn't specify units, so I'll "
+    },
+    {
+      "id": 17,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "get_weather",
+      "raw": "<think>\nOkay, the user wants the weather for New York in Celsius. Let me check the available tools. There's a get_weather function that takes city and units. The city is New York, and units should be 'c' for Celsius. I need to make sure the parameters are correctly formatted. The required fields are city, which is provided, and units is optional but specified here. So I'll call get_weather with city: \"New York\" and units: \"c\". That should do it.\n</think>\n\n{\"type\": \"tool_call\", \"tool\": \"get_weath"
+    },
+    {
+      "id": 18,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "query_database",
+      "raw": "<think>\nOkay, the user wants me to query the events table filtered by date \"2026-09-01\" and type \"meeting\". Let me check the available tools. There's a function called query_database. Its parameters are table and filters. The required parameters are table, and filters is an object.\n\nSo the table here is \"events\", and the filters should be {\"date\": \"2026-09-01\", \"type\": \"meeting\"}. I need to structure the JSON object with type as \"tool_call\", tool as \"query_database\", args including the table and"
+    },
+    {
+      "id": 19,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "message",
+      "got_tool": null,
+      "want_tool": null,
+      "raw": "<think>\nOkay, the user wants a joke after some JSON discussion. Let me check the tools. The available functions are get_weather, search_flights, create_calendar_event, send_message, and query_database. None of these are for telling jokes. So I can't use a tool here. I need to respond with a message type. The user's friend mentioned JSON structure, but the user is now asking for a joke. Since there's no joke tool, I should send a message with a joke as the content. Let me make sure the JSON is co"
+    },
+    {
+      "id": 20,
+      "pass": false,
+      "shim_failure": true,
+      "got_type": "message",
+      "want_type": "tool_call",
+      "got_tool": null,
+      "want_tool": "get_weather",
+      "raw": "<think>\nOkay, the user wants me to check the weather in Oslo. Let me look at the available tools. There's a function called get_weather that takes city and units parameters. The user didn't specify units, so I'll default to Celsius since that's standard in Norway. I need to make sure I don't repeat the send_message call to Bob, but the previous agent already did that, so I'm safe. Just call get_weather with city as Oslo and units as c. Then format the response as a JSON object with type tool_cal"
+    }
+  ]
+}
