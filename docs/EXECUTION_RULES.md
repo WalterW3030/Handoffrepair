@@ -157,3 +157,9 @@ This is the integrity rule behind R9-R13: it governs the SHAPE of deliverables, 
 - Never move/overwrite tag `pilot-freeze-v1`. Never commit secrets. GitHub PAT is disposable — scrub after use. HF token read-only.
 - No per-episode manual correction. Never fabricate data, evidence, or citations.
 - self_flight self-check protocol stays always on (instruction declaration per task).
+
+## R15 — Runbook format: numbered instruction+command list, nothing in prose
+Any multi-step machine runbook is delivered as ONE numbered list in execution order.
+Each step = a short instruction line followed by its fenced command block. Mark each
+step as [tmux] or [second window]. Never embed commands in prose paragraphs, never
+split one runbook across multiple messages. (Origin: M27, 2026-09-07.)
