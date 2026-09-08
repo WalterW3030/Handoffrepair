@@ -1,0 +1,40 @@
+{
+  "model": "qwen3-32b",
+  "served_name": "qwen3-32b",
+  "ts": "evidence/t1_t4_qwen3-32b_20260908T071357Z.json",
+  "smoke": {
+    "content": "OK",
+    "reasoning": "",
+    "usage": {
+      "prompt_tokens": 17,
+      "total_tokens": 19,
+      "completion_tokens": 2,
+      "prompt_tokens_details": null
+    },
+    "seconds": 0.1
+  },
+  "calibration": {
+    "calib_prompt_tokens": 4558,
+    "n_sent_used": 680
+  },
+  "needle": {
+    "content": "KX-7429-ZEBRA",
+    "reasoning": "",
+    "usage": {
+      "prompt_tokens": 15598,
+      "total_tokens": 15609,
+      "completion_tokens": 11,
+      "prompt_tokens_details": null
+    },
+    "seconds": 2.88
+  },
+  "needle_found": true,
+  "t4": {
+    "long_episode_seconds": 2.88,
+    "long_prompt_tokens": 15598,
+    "long_completion_tokens": 11,
+    "decode_tok_per_s": 3.8,
+    "smoke_seconds": 0.1,
+    "note": "decode tok/s = completion_tokens / wall seconds (includes prefill of the long prompt; prefill dominates the first call. Use as a lower bound)."
+  }
+}
