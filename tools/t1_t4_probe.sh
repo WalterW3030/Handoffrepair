@@ -19,8 +19,17 @@ TS="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT="evidence/t1_t4_${KEY}_${TS}.json"
 mkdir -p evidence
 python3 - "$KEY" "$PORT" "$OUT" << 'PYEOF'
-import sys, json, time, urllib.request
+import sys, json, time, re, urllib.request
 key, port, out = sys.argv[1], sys.argv[2], sys.argv[3]
+
+_THINK_RE = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
+def strip_think(text):
+    """Remove any <think>...</think> blocks (complete or trailing-open) — reasoning is
+    not the answer; the code can only appear outside it."""
+    t = _THINK_RE.sub("", text or "")
+    # trailing open think block with no close (truncated) — drop it too
+    i = t.find("<think>")
+    return t[:i] if i != -1 else t
 
 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # bypass proxy env
 
@@ -34,7 +43,11 @@ def served_name():
 
 def chat(model, messages, max_tokens):
     payload = {"model": model, "messages": messages, "temperature": 0.0,
-               "max_tokens": max_tokens}
+               "max_tokens": max_tokens,
+               # thinking models (qwen3-32b/8b) emit <think> on raw chat completions;
+               # request no-think. Harmless on non-thinking models. The probe ALSO
+               # strips a think block defensively (below) in case the flag is ignored.
+               "chat_template_kwargs": {"enable_thinking": False}}
     req = urllib.request.Request(f"http://localhost:{port}/v1/chat/completions",
                                  data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
@@ -87,7 +100,8 @@ prompt = build(n_sent)
 needle = chat(name, [{"role": "user", "content": prompt}], 64)
 result["calibration"] = {"calib_prompt_tokens": calib_tok, "n_sent_used": n_sent}
 result["needle"] = needle
-result["needle_found"] = "KX-7429-ZEBRA" in (needle["content"] + needle["reasoning"])
+# search the de-thinked content + any reasoning field — the think preamble is not the answer
+result["needle_found"] = "KX-7429-ZEBRA" in (strip_think(needle["content"]) + needle["reasoning"])
 
 # ---------- derived throughput ----------
 cu = needle.get("usage", {})
