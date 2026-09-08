@@ -1,0 +1,40 @@
+{
+  "model": "qwen3-32b",
+  "served_name": "qwen3-32b",
+  "ts": "evidence/t1_t4_qwen3-32b_20260908T052507Z.json",
+  "smoke": {
+    "content": "<think>\nOkay, the user wants me",
+    "reasoning": "",
+    "usage": {
+      "prompt_tokens": 13,
+      "total_tokens": 21,
+      "completion_tokens": 8,
+      "prompt_tokens_details": null
+    },
+    "seconds": 0.32
+  },
+  "calibration": {
+    "calib_prompt_tokens": 4554,
+    "n_sent_used": 680
+  },
+  "needle": {
+    "content": "<think>\nOkay, let's see. The user provided a huge block of text that's mostly filler sentences. The task is to find the pilot's locked retrieval code. The document says that the code appears nowhere else in the document, so I need to look through the text carefully.\n\nFirst, I'll start scanning through",
+    "reasoning": "",
+    "usage": {
+      "prompt_tokens": 15594,
+      "total_tokens": 15658,
+      "completion_tokens": 64,
+      "prompt_tokens_details": null
+    },
+    "seconds": 2.67
+  },
+  "needle_found": false,
+  "t4": {
+    "long_episode_seconds": 2.67,
+    "long_prompt_tokens": 15594,
+    "long_completion_tokens": 64,
+    "decode_tok_per_s": 24.0,
+    "smoke_seconds": 0.32,
+    "note": "decode tok/s = completion_tokens / wall seconds (includes prefill of the long prompt; prefill dominates the first call. Use as a lower bound)."
+  }
+}
