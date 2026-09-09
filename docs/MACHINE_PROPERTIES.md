@@ -477,3 +477,16 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - T1+T4: built tools/t1_t4_probe.sh — needle at ~15.5k tokens (self-calibrating: sizes the
   filler from the server's OWN prompt_tokens, not char math — M15 lesson) + timed
   long-episode throughput. One launch per model gives both metrics. NOT yet run.
+
+## 2026-09-08 (b) — ALL VALIDATION GATES CLOSED: T1 4/4 FOUND, T2 4/4 PASS, T3 measured, T4 partial
+- T1 re-run (no-think fix): qwen3-32b FOUND (2.88s), qwen3-8b FOUND (0.76s) at 15,598 tok.
+  Final T1: gemma4 FOUND, 30b-a3b FOUND, 32b FOUND, 8b FOUND — 4/4 at ~15.6k tokens.
+- T4 honest assessment: probe measured a SINGLE cached, highly-repetitive prompt; the
+  observed re-run speedup (8b: 0.76s->0.21s) confirms prefix-caching skew. VALID output:
+  per-model speed ratios (8b ~3.8x faster than 32b; 30b-a3b ~6.4x; gemma4 ~1.6x SLOWER
+  than 32b). NOT valid: absolute main-run GPU-hour estimate (real episodes are unique
+  multi-turn contexts + per-turn shim overhead + HF load per launch). The 13-16 GPU-h
+  estimate stands as the planning number, now with measured relative-speed ordering.
+- Gate summary: T1 PASS x4 | T2 PASS x4 (0 shim_failures each) | T3 PASS x4 (all serve at
+  frozen settings; headroom caveat recorded) | T4 PARTIAL (ratios yes, absolute cost no).
+- MAIN-RUN APPROVAL GATE: all technical preconditions met. Awaiting user go/no-go.
