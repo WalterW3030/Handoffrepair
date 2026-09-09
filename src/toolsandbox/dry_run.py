@@ -300,17 +300,23 @@ def _initial_transcript(ctx_mod, base_role):
 
 
 def run_episode(scenario_name, column, switch_after_turn, repo_path, max_turns=6,
-                scenarios=None, seed=0):
-    """Run one column of one scenario. Returns the run record (same shape as runner.run)."""
+                scenarios=None, seed=0, models=None):
+    """Run one column of one scenario. Returns the run record (same shape as runner.run).
+
+    models=None  -> scripted oracle policy (mock mode; CPU; no GPU tokens).
+    models=dict  -> GPU mode (2026-09-08, M28): {"source": shim, "target": shim,
+                    "user_sim": callable} — real served models via UniformToolShim
+                    drive every action; the world execution below is unchanged.
+    """
     if column not in COLUMNS:
         raise ValueError(column)
     with mock_now(scenario_name, seed):
         return _run_episode_inner(scenario_name, column, switch_after_turn, repo_path,
-                                  max_turns, scenarios, seed)
+                                  max_turns, scenarios, seed, models=models)
 
 
 def _run_episode_inner(scenario_name, column, switch_after_turn, repo_path, max_turns,
-                       scenarios, seed):
+                       scenarios, seed, models=None):
     scenario, world_impl, make_context = load_world(scenario_name, repo_path,
                                                     scenarios=scenarios)
     ctx = make_context()
@@ -327,7 +333,19 @@ def _run_episode_inner(scenario_name, column, switch_after_turn, repo_path, max_
             env.respond(ending_index=i)
 
     episode_state = {"info_source": []}
-    policy = make_policy(scenario, world_impl, episode_state)
+    if models is None:
+        policy = make_policy(scenario, world_impl, episode_state)
+        gpu = None
+        source, target = SimpleNamespace(name="mock-source"), SimpleNamespace(name="mock-target")
+    else:
+        # GPU path (M28): real served models via the frozen shim. The loop below is
+        # identical; only the policy source and the message-turn handling differ.
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        import gpu_policy as gpu_mod
+        tools = gpu_mod.tool_schemas(scenario, world_impl, repo_path)
+        gpu = gpu_mod.GpuPolicy(tools, episode_state)
+        source, target = models["source"], models["target"]   # shim objects; .name is the served name
+        policy = None
     messages = _initial_transcript(ctx_mod, BaseRole)
     episode_id = f"ts_{scenario_name}"
     ledger = IdempotencyLedger(episode_id)
@@ -338,10 +356,27 @@ def _run_episode_inner(scenario_name, column, switch_after_turn, repo_path, max_
     while turn < max_turns:
         actor = target if (column == "b0" or handoff_applied) else source
         view = messages                              # what THIS model actually sees
-        action = policy(view, steps)
+        action = (gpu.for_actor(actor)(view, steps) if gpu is not None
+                  else policy(view, steps))
         if action is None:
             break
         code, fname = action
+        if code == "__MESSAGE__":
+            # model chose to speak to the user instead of calling a tool (GPU path)
+            text = fname
+            step = {"model": actor.name, "type": "message", "content": text[:500]}
+            steps.append(step)
+            messages.append({"role": "assistant", "content": text})
+            user_sim = (models or {}).get("user_sim")
+            if user_sim is None:
+                break                            # no one to answer — episode over
+            reply = user_sim(messages)
+            step["user_reply"] = reply[:500]
+            messages.append({"role": "user", "content": reply})
+            turn += 1
+            if reply.strip().upper() == "DONE":
+                break
+            continue
         step = {"model": actor.name, "type": "tool_call", "tool": fname}
         # parse canonical args back out of the code string for the ledger
         args = _parse_args(code, fname)
@@ -408,7 +443,9 @@ def _run_episode_inner(scenario_name, column, switch_after_turn, repo_path, max_
         "policy_info_source": episode_state["info_source"],
         "handoff_info_sufficient": None if column == "b0" else
             ("gold_fallback" not in episode_state["info_source"]),
-        "usage": {"prompt_tokens": 0, "completion_tokens": 0},   # mock: no GPU tokens
+        "shim_failures": episode_state.get("shim_failures", 0),
+        "usage": (dict(gpu.usage) if gpu is not None else
+                  {"prompt_tokens": 0, "completion_tokens": 0}),   # mock: no GPU tokens
         "gpu_h": 0.0, "cash": 0.0,
         "score": {"similarity": result.similarity,
                   "milestone_similarity": result.milestone_similarity,

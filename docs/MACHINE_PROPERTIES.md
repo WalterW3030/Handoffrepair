@@ -490,3 +490,26 @@ Local sandbox copy renamed to `Handoffrepair` to match (commit pending); scripts
 - Gate summary: T1 PASS x4 | T2 PASS x4 (0 shim_failures each) | T3 PASS x4 (all serve at
   frozen settings; headroom caveat recorded) | T4 PARTIAL (ratios yes, absolute cost no).
 - MAIN-RUN APPROVAL GATE: all technical preconditions met. Awaiting user go/no-go.
+
+## 2026-09-08 (c) — M28 fix: GPU run path wired (was mock-only)
+- Found: dry_run._run_episode_inner hardcoded mock-source/mock-target + scripted oracle
+  policy; --mode gpu checked endpoint CONFIG keys then ran the same mock loop. Main run
+  would have produced counterfeit results. Also: PAIRS still listed the retired llama-70b
+  lineup (model swap never propagated to the runner).
+- Wired: src/gpu_policy.py (tool schemas from live tool signatures; GpuPolicy via
+  UniformToolShim; action->code in the mock's print(fname(k=v)) shape; grounded user sim
+  from scenario sandbox DB) + src/live_client.py (proxy-bypassing OpenAI-shaped urllib
+  client). dry_run.run_episode(models=...) branches: gpu = model-backed policy, message
+  turns answered by the grounded user sim, shim_failure = empty terminal turn (Rule 26),
+  real token usage recorded. Mock path unchanged (models=None).
+- run_pilot.py: PAIRS = served names of the FROZEN lineup (pair1 32b->8b, pair2 30b->8b,
+  heldout 32b->gemma4; pair key renamed pair2_70to32->pair2_30to8, sizing.yaml in sync);
+  --pairs/--limit flags; _require_endpoints now pre-flights ONLY the models the run list
+  needs: configured AND answering /v1/models with the right served name (the 404 lesson).
+  decoding.yaml gains vllm_endpoints with fixed per-model ports (8000/8001/8002/8003).
+- Gate: tools/gpu_dryrun_gate.sh <pair> — one real b0 episode, asserts served model
+  names + nonzero usage + >=1 tool_call step. MUST pass before any main-run segment.
+- Local unit checks passed (policy paths, code shape, sentinel handling, client shape).
+  Mock smoke + live gate require the ToolSandbox machine — pending there.
+- Manifest after rename: 1,180 runs, planning 19.72 GPU-h vs 20.0 cap — within_cap=True
+  but thin; Day-1 measured-rate checkpoint decides any scope trim.

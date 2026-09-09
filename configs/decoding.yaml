@@ -30,8 +30,16 @@ retry_rule:
 tool_parsers:
   Qwen/Qwen3-32B: uniform_shim
   Qwen/Qwen3-8B: uniform_shim
-  Qwen/Qwen3-30B-A3B-Instruct-2507: uniform_shim
+  Qwen3-30B-A3B-Instruct-2507: uniform_shim
   google/gemma-4-31B-it: uniform_shim
+# 2026-09-08 (M28): per-model endpoints for the gpu run path. Keys are the SERVED names
+# (--served-model-name in serve_*.sh); ports are FIXED per model so pair source/target/
+# user-sim never collide (user sim = qwen3-8b, seed 101). Serve with PORT=<port>.
+vllm_endpoints:
+  qwen3-32b: "http://127.0.0.1:8000"
+  qwen3-8b: "http://127.0.0.1:8001"
+  qwen3-30b-a3b: "http://127.0.0.1:8002"
+  gemma4-31b: "http://127.0.0.1:8003"
 serving:
   engine: vllm
   gpu_memory_utilization: 0.92   # 2026-09-01: raised so gemma4's KV pool (11.07 GiB) clears its

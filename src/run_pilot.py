@@ -31,10 +31,15 @@ import yaml, manifest
 CFG = lambda n: yaml.safe_load(open(os.path.join(ROOT, "configs", n)))
 
 PAIRS = {
-    "pair1_32to8":    ("Qwen/Qwen3-32B", "Qwen/Qwen3-8B"),
-    "pair2_70to32":   ("RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic", "Qwen/Qwen3-32B"),
-    "heldout_32to31": ("Qwen/Qwen3-32B", "google/gemma-4-31B-it"),
+    # 2026-09-08 (M28): values are the SERVED model names (must match --served-model-name
+    # in serving/serve_*.sh and decoding.yaml:vllm_endpoints). Frozen lineup per the
+    # 2026-08-30/31 model swap: pair_2 is 30B-A3B -> 8B (llama-70b retired), held-out
+    # is 32B -> gemma4. Key pair2_30to8 renamed from pair2_70to32 (sizing.yaml in sync).
+    "pair1_32to8":    ("qwen3-32b", "qwen3-8b"),
+    "pair2_30to8":    ("qwen3-30b-a3b", "qwen3-8b"),
+    "heldout_32to31": ("qwen3-32b", "gemma4-31b"),
 }
+USER_SIM_MODEL = "qwen3-8b"     # seed 101 (configs/seeds.yaml); served alongside the pair
 SP_TO_TURN_PROBE = {"S1": "first_tool", "S2": "first_side_effect", "S3": "half"}
 B6_CELL = {"pair": "pair1_32to8", "column": "compiler", "switch_point": "S2"}
 
@@ -59,10 +64,10 @@ def size_pilot(rates, budget_h=None):
         runs_cal  = (E + 4*E*3) * 2 * 2
         runs_held = (E + 2*E*3) * 1 * 1
         if rates and rates.get("kind") == "gpu_measured":
-            sec = (runs_cal//2)*(rates["pair1_32to8"]["sec"] + rates["pair2_70to32"]["sec"]) \
+            sec = (runs_cal//2)*(rates["pair1_32to8"]["sec"] + rates["pair2_30to8"]["sec"]) \
                   + runs_held * rates["heldout_32to31"]["sec"]
         else:
-            sec = (runs_cal//2)*(plan["pair1_32to8"] + plan["pair2_70to32"]) \
+            sec = (runs_cal//2)*(plan["pair1_32to8"] + plan["pair2_30to8"]) \
                   + runs_held * plan["heldout_32to31"]
         b = sizing["budget"]
         total_h = sec/3600 + b["model_load_overhead_h"] + b["b6_yardstick_h"]
@@ -84,10 +89,20 @@ def _execute_run(run, scenarios, repo, mode):
     sp = run["switch_point"]
     switch_turn = None if sp is None else dry_run.probe_switch_turn(
         scenario, SP_TO_TURN_PROBE[sp], scenarios, repo, seed=run["seed"])
+    models = None
+    if mode == "gpu":
+        # M28 wiring: real served models via the frozen shim; user sim grounded in
+        # THIS scenario's sandbox DB (bound per-run — grounding is scenario-specific).
+        import gpu_policy
+        models = _models_for(run["pair"])
+        sc_obj, _, _ = dry_run.load_world(scenario, repo, scenarios=scenarios)
+        models["user_sim"] = gpu_policy.make_grounded_user_sim(
+            _sim_client(), USER_SIM_MODEL, sc_obj)
     t0 = time.time()
     rec = dry_run.run_episode(scenario, run["column"].lower(),
                               switch_turn if switch_turn is not None else 0,
-                              repo, scenarios=scenarios, seed=run["seed"])
+                              repo, scenarios=scenarios, seed=run["seed"],
+                              models=models)
     wall = time.time() - t0
     rec.pop("_ctx", None)
     rec.update({
@@ -139,15 +154,20 @@ def phase_main(args, sizing):
     if rates and rates.get("kind") == "gpu_measured":
         measured = {p: rates[p] for p in PAIRS}
     runs = manifest.enumerate_runs(sizing, episodes, measured=measured)
+    if args.pairs:
+        keep = set(args.pairs.split(","))
+        unknown = keep - set(PAIRS)
+        if unknown:
+            raise SystemExit(f"unknown pair(s): {sorted(unknown)} — known: {sorted(PAIRS)}")
+        runs = [r for r in runs if r["pair"] in keep]
+    if args.limit:
+        runs = runs[: args.limit]
     summary = manifest.summarize(runs, sizing)
     out = {"episodes_per_cell": E, "est_gpu_h": est_h, **summary, "runs": runs}
     json.dump(out, open(os.path.join(ROOT, "logs", "run_manifest.json"), "w"), indent=2)
     print(f"manifest: {summary['total_runs']} runs, {summary['total_gpu_hours']} GPU-h "
           f"({summary['rate_kind']}), within_cap={summary['within_cap']}, E={E}")
 
-    if args.mode == "gpu":
-        _require_endpoints()
-    scenarios = load_scenarios(args.toolsandbox_repo)
     if args.mode == "mock" and not args.full:
         # cell-coverage smoke: every (pair, column, switch_point) cell once, first episode
         cells, seen = [], set()
@@ -160,6 +180,9 @@ def phase_main(args, sizing):
         print(f"mock smoke: {len(todo)} cell-coverage runs (use --full for all {len(runs)})")
     else:
         todo = runs
+    if args.mode == "gpu":
+        _require_endpoints(todo)
+    scenarios = load_scenarios(args.toolsandbox_repo)
     import logging_
     log_path = os.path.join(ROOT, "logs", "pilot_runs.jsonl")
     for i, r in enumerate(todo):
@@ -206,13 +229,60 @@ def phase_analyze(args, sizing):
     print(f"analyze: wrote {out}")
 
 
-def _require_endpoints():
+def _require_endpoints(runs):
+    """Pre-flight (R3): every model the RUN LIST needs must be configured AND live.
+    Per-run-list, not per-lineup — the pilot serves 2-3 models at a time, so models
+    not needed by these runs are not required to be up."""
     dec = CFG("decoding.yaml")
     eps = dec.get("vllm_endpoints") or {}
-    missing = [k for k in ("source", "target") if not eps.get(k)]
+    needed = sorted({m for r in runs for m in PAIRS[r["pair"]]} | {USER_SIM_MODEL})
+    missing = [m for m in needed if not eps.get(m)]
     if missing:
         raise SystemExit(f"gpu mode blocked: vllm_endpoints missing {missing} in "
                          f"decoding.yaml — set them on the H100 machine after staging")
+    import urllib.request
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    for m in needed:
+        url = eps[m].rstrip("/") + "/v1/models"
+        try:
+            with opener.open(urllib.request.Request(url), timeout=15) as r:
+                served = [x["id"] for x in json.loads(r.read().decode())["data"]]
+        except Exception as e:
+            raise SystemExit(f"gpu mode blocked: endpoint for '{m}' unreachable at {url}: {e}")
+        if m not in served:
+            raise SystemExit(f"gpu mode blocked: endpoint {url} serves {served}, not '{m}'")
+    print(f"endpoints pre-flight OK: {needed}")
+
+
+# ------------------------------------------------------------------ gpu wiring (M28)
+_SHIM_CACHE = {}
+_SIM_CLIENT = None
+
+def _shim_for(model_name):
+    """UniformToolShim over a proxy-bypassing live client, one per served model."""
+    if model_name not in _SHIM_CACHE:
+        import live_client
+        sys.path.insert(0, os.path.join(ROOT, "serving"))
+        from tool_call_shim import UniformToolShim
+        base_url = (CFG("decoding.yaml").get("vllm_endpoints") or {})[model_name]
+        _SHIM_CACHE[model_name] = UniformToolShim(live_client.LiveClient(base_url),
+                                                  model_name)
+    return _SHIM_CACHE[model_name]
+
+
+def _sim_client():
+    global _SIM_CLIENT
+    if _SIM_CLIENT is None:
+        import live_client
+        eps = CFG("decoding.yaml").get("vllm_endpoints") or {}
+        _SIM_CLIENT = live_client.LiveClient(eps[USER_SIM_MODEL])
+    return _SIM_CLIENT
+
+
+def _models_for(pair):
+    """The models dict dry_run's gpu path expects: source/target shims for this pair."""
+    src, tgt = PAIRS[pair]
+    return {"source": _shim_for(src), "target": _shim_for(tgt)}
 
 
 def main():
@@ -221,6 +291,10 @@ def main():
     ap.add_argument("--mode", default="mock", choices=["mock", "gpu"])
     ap.add_argument("--full", action="store_true", help="execute the full manifest (GPU machine)")
     ap.add_argument("--calibrate-episodes", type=int, default=2)
+    ap.add_argument("--pairs", default=None,
+                    help="comma-separated pair keys to run (gpu: serve ONLY those models + user sim)")
+    ap.add_argument("--limit", type=int, default=None,
+                    help="cap the number of runs executed (gpu dry-run gate uses --limit 1)")
     ap.add_argument("--toolsandbox-repo", default=os.environ.get("TOOLSANDBOX_REPO", "/opt/ToolSandbox"))
     args = ap.parse_args()
     sizing = manifest.load_sizing()
