@@ -1,7 +1,8 @@
 # ToolSandbox dependencies (extracted from upstream pyproject.toml, 2026-09-08)
-# Two py3.12-incompatible pins loosened: ccy (1.3.1 has no py3.12 wheel) and
-# transformers (4.41.2 conflicts with our pinned stack; not used by the run path).
-# Everything else kept at the pinned versions for benchmark fidelity.
+# py3.12 adjustments: ccy loosened (1.3.1 has no py3.12 wheel); transformers dropped
+# (conflicts with our pinned stack, unused by the run path); numpy UNPINNED — pinning
+# 1.26.4 broke the conda env's scipy ABI (numpy._core.multiarray import failure);
+# numpy must stay at whatever scipy in the env was built against.
 anthropic==0.26.1
 ccy>=2.0.0
 decorator==5.1.1
@@ -12,7 +13,7 @@ huggingface_hub==0.23.4
 jsonschema==4.19.2
 langchain==0.1.3
 networkx==3.2.1
-numpy==1.26.4
+numpy
 openai==1.17.0
 phonenumbers==8.13.39
 pint==0.23
@@ -22,7 +23,7 @@ pyyaml==6.0.1
 rapidfuzz==3.9.3
 requests==2.32.3
 rouge-score==0.1.2
-scipy==1.13.1
+scipy
 sentencepiece==0.2.0
 StrEnum==0.4.15
 tenacity==8.4.1
