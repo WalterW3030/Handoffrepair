@@ -3,6 +3,7 @@
 # (conflicts with our pinned stack, unused by the run path); numpy UNPINNED — pinning
 # 1.26.4 broke the conda env's scipy ABI (numpy._core.multiarray import failure);
 # numpy must stay at whatever scipy in the env was built against.
+# pint>=0.24 (0.23 calls np.cumproduct, removed in numpy 2.x — same ABI-compat class as M29).
 anthropic==0.26.1
 ccy>=2.0.0
 decorator==5.1.1
@@ -16,7 +17,7 @@ networkx==3.2.1
 numpy
 openai==1.17.0
 phonenumbers==8.13.39
-pint==0.23
+pint>=0.24
 polars==0.20.31
 pydantic==2.7.4
 pyyaml==6.0.1
